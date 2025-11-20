@@ -510,11 +510,11 @@ def exonrunPairedSim(ls, num_clones, coverage, rl, fl, rloc, floc, batch, root, 
         chroms = applyMutations(ls, infos, muts, clone)
     else:
         chroms = ls
-    chromnum = 0
     while(cov < coverage/num_single_cells):
         # print(giga_list)
         # print(giga_list2)
         # print(cov)
+        chromnum = 0
         for i in range(batch):
             for chrom in chroms:
                 if(len(chrom)==0): # Deleted chromosomes
