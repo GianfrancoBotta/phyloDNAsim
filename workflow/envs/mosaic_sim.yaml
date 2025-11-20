@@ -1,0 +1,16 @@
+name: mosaic_sim
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - psutil
+  - numpy
+  - pandas
+  - biopython
+  - msprime
+  - tskit
+  - pip
+  - pip:
+      - datasketch

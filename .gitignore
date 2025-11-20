@@ -1,0 +1,27 @@
+# Ignore everything by default
+*
+
+# Track the repo essentials
+!.gitignore
+!Snakefile
+!run.sh
+!config/
+!workflow/
+
+# Track all normal files inside tracked directories
+!config/**/*
+!workflow/**/*
+
+# Ignore hidden files inside tracked directories
+config/**/.* 
+workflow/**/.*
+
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Ignore system files
+.DS_Store
+Thumbs.db

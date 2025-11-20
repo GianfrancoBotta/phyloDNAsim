@@ -1,0 +1,4 @@
+snakemake_min_version: "7.30.1"
+mambaforge_version: "24.7.1-0"
+
+chr_regions: ["on_target", "off_target"]
