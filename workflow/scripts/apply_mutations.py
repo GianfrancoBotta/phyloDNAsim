@@ -10,8 +10,17 @@ def apply_deletion(seqs, info):
     seqs[info['chrom_num']] = seqs[info['chrom_num']][:info['start']] + seqs[info['chrom_num']][info['end']:]
     return seqs
 
+# def apply_CNV(seqs, info):
+#     seqs[info['chrom_num']] = seqs[info['chrom_num']][:info['start']] + seqs[info['chrom_num']][info['start']:info['end']]*info['rep_num'] + seqs[info['chrom_num']][info['end']:]
+#     return seqs
 def apply_CNV(seqs, info):
-    seqs[info['chrom_num']] = seqs[info['chrom_num']][:info['start']] + seqs[info['chrom_num']][info['start']:info['end']]*info['rep_num'] + seqs[info['chrom_num']][info['end']:]
+    try:
+        seqs[info['chrom_num']] = seqs[info['chrom_num']][:info['start']] + seqs[info['chrom_num']][info['start']:info['end']]*info['rep_num'] + seqs[info['chrom_num']][info['end']:]
+    except(TypeError):
+        print(info['chrom_num'])
+        print(info['start'])
+        print(info['end'])
+        print(info['rep_num'])
     return seqs
 
 def apply_aneuploidy(seqs, info):

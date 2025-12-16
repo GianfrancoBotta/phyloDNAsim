@@ -2,13 +2,18 @@ import copy
 import gc
 import glob
 import gzip
+import io
 import json
+import math
 import msprime
+import multiprocessing as mp
 import numpy as np
 import os
 import psutil
 import random
 import re
+import shutil
+import statistics
 import string
 import tskit
 
@@ -129,17 +134,6 @@ def generateOrder(tree, time_matrix, list_of_rates):
             ordered_muts.update({list(list_of_rates.keys())[idx]: lst})
         mutationedge_list.append(ordered_muts)
     return mutationedge_list, fin_rate_list
-
-def wgz(floc, ob):
-    with gzip.open(floc, 'wt') as f:
-        for i in ob:
-            f.write(f'{i}\n')
-
-def rgz(floc):
-    return_list = []
-    with gzip.open(floc, 'rt') as file:
-        return_list = [line.strip() for line in file]
-    return return_list
 
 def saveMutations(current_genome, tot_nodes, working_dir, list_of_paths, use_signatures, mutationedge_list, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab):
     save_functions = {
@@ -309,7 +303,7 @@ def wgsSim(ls, num_clones, coverage, rl, fl, floc, batch, alpha, erate, tab, inf
                 clone = pickdclone(distn, num_clones)
                 chroms = applyMutations(ls, infos, muts, clone)
             chromnum = 0
-            for i in range(batch):
+            for j in range(batch):
                 for chrom in chroms:
                     if(len(chrom)==0): # Deleted chromosomes
                         continue
@@ -351,93 +345,142 @@ def wgsSim(ls, num_clones, coverage, rl, fl, floc, batch, alpha, erate, tab, inf
         f2.close()
     return(0)
 
-def targetedSim(ls, num_clones, coverage, rl, fl, floc, batch, exonDict, numchrommap, alpha, erate, tab, infos, muts, r=None, p=None, num_single_cells=1, flag=0, paired=False):
+def targetedSim_bulk(ls, num_clones, coverage, rl, fl, floc, batch, exonDict, numchrommap, alpha, erate, tab, infos, muts, paired=False):
     os.makedirs(floc, exist_ok=True)
     # Open files to write
-    if(flag == 0):
-        f1 = gzip.open(os.path.join(floc, 'bulkleft.fq.gz'), 'wt')
-        if(paired):
-            f2 = gzip.open(os.path.join(floc, 'bulkright.fq.gz'), 'wt')
-    elif(flag == 1):
-        f1 = gzip.open(os.path.join(floc, 'refleft.fq.gz'), 'wt')
-        if(paired):
-            f2 = gzip.open(os.path.join(floc, 'refright.fq.gz'), 'wt')
-    else:
-        f1 = gzip.open(os.path.join(floc, 'singlecellleft.fq.gz'), 'wt')
-        if(paired):
-            f2 = gzip.open(os.path.join(floc, 'singlecellright.fq.gz'), 'wt')
-    # Initialize coverage
-    cov = 0.0
+    f1 = io.BufferedWriter(gzip.open(os.path.join(floc, 'bulkleft.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
     if(paired):
-        ratio = 2*rl/fl
+        f2 = io.BufferedWriter(gzip.open(os.path.join(floc, 'bulkright.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
     else:
         fl = rl
-    if(flag == 0):
-        chroms = ls # Duplicate healthy chromosomes to modify them
-    if(flag == 2):
-        if(any(x is None for x in [p, r])):
-            print("Negative binomial parameters for single-cell depths are needed in single-cell mode.")
-        target_cov = np.random.negative_binomial(r, p, size=num_single_cells) # Sample cell depths from a negative binomial
-        target_cov = target_cov / target_cov.sum() * coverage # Scale to match total coverage
-    else:
-        target_cov = list(coverage)
-    # Initialize lists to store reads from each single-cell
-    r1 = []
-    if(paired):
-        r2 = []
-    for i in range(num_single_cells):
-        if(flag == 2): # Pick a clone for every single-cell if it is a single-cell simultation
-            distn = getDirichletClone(num_clones, alpha)
-            clone = pickdclone(distn, num_clones)
-            chroms = applyMutations(ls, infos, muts, clone)
-        while(cov < target_cov[i]):
-            if(flag == 1): # Pick a clone for every added coverage if it is a bulk simulation
-                distn = getDirichletClone(num_clones, alpha)
-                clone = pickdclone(distn, num_clones)
-                chroms = applyMutations(ls, infos, muts, clone)
-            chromnum = 0
-            for i in range(batch):
-                for chrom in chroms:
-                    if(len(chrom)==0): # Deleted chromosomes
-                        continue
-                    # frag_len = 0
-                    # while(frag_len <= rl):
-                    #     frag_len = getfrag(fl)
-                    for interval in exonDict[numchrommap[chromnum]]:
-                        startindex = random.randint(interval[0], interval[1])
-                        sub = chrom[startindex:startindex+fl]
-                        if random.random() > 0.5:
-                            sub = revc(sub, tab)
-                        random_str = ''.join(random.choices(
-                            string.ascii_letters, k=15))
-                        qual1 = 'K'*len(sub[:rl])
-                        pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
-                        if(paired):
-                            qual2 = 'K'*len(sub[-rl:])
-                            pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
-                        if(flag == 2):
-                            r1.append('\n'.join([f'@cell{clone}_{random_str}', pair1, '+', qual1]) + '\n')
-                            if(paired):
-                                r2.append('\n'.join([f'@cell{clone}_{random_str}', pair2, '+', qual2]) + '\n')
-                        else:
-                            r1.append('\n'.join([f'@{random_str}', pair1, '+', qual1]) + '\n')
-                            if(paired):
-                                r2.append('\n'.join([f'@{random_str}', pair2, '+', qual2]) + '\n')
-                    chromnum += 1
-            # Update coverage after each iteration
-            cov += (2*batch*ratio) if paired else 2*batch
-        # Write to files
-        f1.write("".join(r1)) 
-        if(paired):
-            f2.write("".join(r2))
-        r1.clear()
-        if(paired):
-            r2.clear()
+    # Compute panel length to scale coverage and read quality
+    panel_size = float(sum((interval[1] - interval[0]) for cnum in range(25) for interval in exonDict[numchrommap[cnum]]))
+    qual = 'K'*rl
+    # Initialize coverage
+    cov = 0.0
+    while(cov < coverage):
+        # Pick a clone for every added coverage in a bulk simulation
+        distn = getDirichletClone(num_clones, alpha)
+        clone = pickdclone(distn, num_clones)
+        chroms = applyMutations(ls, infos, muts, clone)
+        chromnum = 0
+        for j in range(batch):
+            for chrom in chroms:
+                if(len(chrom)==0): # Deleted chromosomes
+                    continue
+                # frag_len = 0
+                # while(frag_len <= rl):
+                #     frag_len = getfrag(fl)
+                # Sample intervals consistent with the coverage of each cell (for very low coverage)
+                k = math.ceil(len(exonDict[numchrommap[chromnum]]) * min(coverage, 1))
+                sampled_intervals = random.sample(exonDict[numchrommap[chromnum]], k)
+                for interval in sampled_intervals:
+                    # Update coverage after each iteration
+                    cov += (2*batch*rl / panel_size) if paired else (batch*rl / panel_size)
+                    startindex = random.randint(interval[0], interval[1])
+                    sub = chrom[startindex:startindex+fl]
+                    if random.random() > 0.5:
+                        sub = revc(sub, tab)
+                    random_str = ''.join(random.choices(
+                        string.ascii_letters, k=15))
+                    pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
+                    if(paired):
+                        pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
+                    f1.write(('\n'.join([f'@{random_str}', pair1, '+', qual]) + '\n').encode('utf-8'))
+                    if(paired):
+                        f2.write(('\n'.join([f'@{random_str}', pair2, '+', qual]) + '\n').encode('utf-8'))
+                chromnum += 1
     # Close files
     f1.close()
     if(paired):
         f2.close()
     return(0)
+
+
+def targetedSim_sc(cell_id, target_cov, ls, num_clones, rl, fl, floc, batch, exonDict, numchrommap, alpha, erate, tab, infos, muts, paired=False):
+    # per-cell output directory or prefix
+    cell_dir = os.path.join(floc, f"cell_{cell_id}")
+    os.makedirs(cell_dir, exist_ok=True)
+    f1 = io.BufferedWriter(gzip.open(os.path.join(cell_dir, 'left.fq.gz'), 'wb'), buffer_size=4 * 1024**2)
+    if paired:
+        f2 = io.BufferedWriter(gzip.open(os.path.join(cell_dir, 'right.fq.gz'), 'wb'), buffer_size=4 * 1024**2)
+    
+    # Compute panel length to scale coverage and read quality
+    panel_size = float(sum((interval[1] - interval[0]) for cnum in range(25) for interval in exonDict[numchrommap[cnum]]))
+    qual = 'K' * rl
+    cov = 0.0
+
+    distn = getDirichletClone(num_clones, alpha)
+    clone = pickdclone(distn, num_clones)
+    chroms = applyMutations(ls, infos, muts, clone)
+
+    while cov < target_cov:
+        cell_cov = 0.0
+        chromnum = 0
+
+        for j in range(batch):
+            for chrom in chroms:
+                if len(chrom) == 0:
+                    continue
+                k = math.ceil(len(exonDict[numchrommap[chromnum]]) * min(target_cov, 1))
+                sampled_intervals = random.sample(exonDict[numchrommap[chromnum]], k)
+                for interval in sampled_intervals:
+                    cell_cov += (2 * batch * rl) if paired else (batch * rl)
+                    startindex = random.randint(interval[0], interval[1])
+                    sub = chrom[startindex:startindex + fl]
+                    if random.random() > 0.5:
+                        sub = revc(sub, tab)
+                    random_str = ''.join(random.choices(string.ascii_letters, k=15))
+                    pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
+                    if(paired):
+                        pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
+                    f1.write(('\n'.join([f'@cell{cell_id}_clone{clone}_{random_str}', pair1, '+', qual]) + '\n').encode('utf-8'))
+                    if(paired):
+                        f2.write(('\n'.join([f'@cell{cell_id}_clone{clone}_{random_str}', pair2, '+', qual]) + '\n').encode('utf-8'))
+                chromnum += 1
+        cov += cell_cov / panel_size
+    f1.close()
+    if paired:
+        f2.close()
+    return(0)
+
+def targetedSim_sc_parallel(num_single_cells, coverage, r=None, p=None, threads=None, *args):
+    # Simulate negative binomial coverage
+    if(any(x is None for x in [p, r])):
+            print("Negative binomial parameters for single-cell depths are needed in single-cell mode.")
+    cell_cov = np.random.negative_binomial(r, p, size=num_single_cells) # Sample cell depths from a negative binomial
+    cell_cov = cell_cov / cell_cov.sum() * coverage # Scale to match total coverage
+    if(threads == None):
+        print("Using 4 cores as number of cores to use is not specified.")
+        threads = 4
+    with mp.Pool(processes=threads) as pool:
+        pool.starmap(
+            targetedSim_sc,
+            [(i+1, cell_cov[i], *args) for i in range(num_single_cells)]
+        )
+
+def aggregate_fastqs(fastq_dir, output_left_fastq, output_right_fastq=None, paired=False):
+    left_fastqs = sorted(glob.glob(f"{fastq_dir}/*/*left.fq.gz"))
+    if(paired):
+        right_fastqs = sorted(glob.glob(f"{fastq_dir}/*/*right.fq.gz"))
+
+    with open(output_left_fastq, "ab") as out_f:
+        for fq in left_fastqs:
+            with open(fq, "rb") as in_f:
+                shutil.copyfileobj(in_f, out_f)
+    if(paired):
+        with open(output_right_fastq, "ab") as out_f:
+            for fq in right_fastqs:
+                with open(fq, "rb") as in_f:
+                    shutil.copyfileobj(in_f, out_f)
+
+    cleanup_dir(fastq_dir)
+    return(0)
+
+def cleanup_dir(fastq_dir):
+    for path in glob.glob(os.path.join(fastq_dir, "*")):
+        if os.path.isdir(path):
+            shutil.rmtree(path)
 
 def lbrunSim(num_tumors, num_clones_list, coverage, base_dir, floc, root, alpha, ctdna_frac, batchsize):
     f = open(floc + 'liquid_biopsyfull.fasta', 'w')

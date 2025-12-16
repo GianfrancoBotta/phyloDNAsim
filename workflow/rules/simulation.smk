@@ -7,6 +7,7 @@ rule simulate_sc_tumor_data_MosaicSim:
         signatures="/cluster/work/bewi/members/gbotta/exploratory_da/results/prepare/signatures/MosaicSim_signatures.txt"
     output:
         outdir=directory("/cluster/work/bewi/members/gbotta/MosaicSim_speedup/results/simulation/{region}")
+    threads: 10
     params:
         yaml_config="/cluster/work/bewi/members/gbotta/MosaicSim_speedup/config/simulate.yaml",
         region=lambda wc: wc.region

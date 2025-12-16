@@ -46,6 +46,7 @@ WES = params['WES']
 error_rate = random.choice(params['error_rate_list'])
 r = params['r']
 p = params['p']
+bulk = params['bulk']
 
 chrom_names, chroms = map(list, zip(*((record.id, bytearray(str(record.seq).upper(), 'utf-8')) for record in SeqIO.parse(full_genome, "fasta")))) # Parse sequences and names together
 numchrommap = dict(zip(range(len(chrom_names)), chrom_names))
@@ -76,8 +77,11 @@ if(WES):
             old_end_i = end_i
             start_i = int(start) - read_len
             end_i = int(end) + read_len
-            if((start_i - old_end_i) < 0):
+            if(start_i < old_end_i):
                 start_i = old_end_i
+            if(end_i < old_end_i):
+                end_i = old_end_i
+                continue
             shift += start_i - old_end_i
             interval = [start_i - shift, end_i - shift]
             total_num_intervals += 1
@@ -88,7 +92,7 @@ if(WES):
         panel_chroms[rev_numchrommap[chrom]] = bytearray().join(strings_to_idx)
     chroms = panel_chroms
     del panel_chroms
-        
+    
 os.makedirs(storage_dir, exist_ok=True)
 
 # Mutation process rate lists (dependent on the length of the regions we are analysing)
@@ -186,7 +190,7 @@ for num_clones in num_clones_list:
     approx_len = len(muts[0])
 
     for sample in range(num_samples):
-        sample_working_dir = os.path.join(working_dir, f'sample_{sample}')
+        sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}')
         os.makedirs(sample_working_dir, exist_ok=True)
         with open(os.path.join(sample_working_dir, 'parameter_list.txt'), 'w') as f:
             f.write('num leaves: ' + str(num_clones)+'\n')
@@ -205,46 +209,44 @@ for num_clones in num_clones_list:
                 f.write('NB parameters: r=' + str(r) + ' p=' + str(p) + '\n')
 
         if(WES):
-            if num_single_cells in [0,1]: # Bulk simulation
-                targetedSim(ls = chroms,
-                            num_clones = use_nodes,
-                            coverage = coverage,
-                            rl = read_len,
-                            fl = frag_len,
-                            floc = sample_working_dir,
-                            batch = params['batch_size'],
-                            exonDict = exonDict,
-                            numchrommap = numchrommap,
-                            alpha = alpha,
-                            erate = error_rate,
-                            tab = tab,
-                            infos = infos,
-                            muts = muts,
-                            num_single_cells=1,
-                            flag=0,
-                            paired = paired)
+            if bulk: # Bulk simulation
+                targetedSim_bulk(ls = chroms,
+                                 num_clones = use_nodes,
+                                 coverage = coverage,
+                                 rl = read_len,
+                                 fl = frag_len,
+                                 floc = sample_working_dir,
+                                 batch = params['batch_size'],
+                                 exonDict = exonDict,
+                                 numchrommap = numchrommap,
+                                 alpha = alpha,
+                                 erate = error_rate,
+                                 tab = tab,
+                                 infos = infos,
+                                 muts = muts,
+                                 paired = paired)
             else:
-                targetedSim(ls = chroms,
-                            num_clones = use_nodes,
-                            coverage = coverage,
-                            rl = read_len,
-                            fl = frag_len,
-                            floc = sample_working_dir,
-                            batch = params['batch_size'],
-                            exonDict = exonDict,
-                            numchrommap = numchrommap,
-                            alpha = alpha,
-                            erate = error_rate,
-                            tab = tab,
-                            infos = infos,
-                            muts = muts,
-                            r = r,
-                            p = p,
-                            num_single_cells=num_single_cells,
-                            flag=2,
-                            paired = paired)
+                targetedSim_sc_parallel(num_single_cells,
+                                        coverage,
+                                        r,
+                                        p,
+                                        snakemake.threads,
+                                        chroms,
+                                        use_nodes,
+                                        read_len,
+                                        frag_len,
+                                        sample_working_dir,
+                                        params['batch_size'],
+                                        exonDict,
+                                        numchrommap,
+                                        alpha,
+                                        error_rate,
+                                        tab,
+                                        infos,
+                                        muts,
+                                        paired)
         else:            
-            if num_single_cells in [0,1]: # Bulk simulation
+            if bulk: # Bulk simulation
                 wgsSim(ls = chroms,
                        num_clones = use_nodes,
                        coverage = coverage,
@@ -278,6 +280,10 @@ for num_clones in num_clones_list:
                        num_single_cells=num_single_cells,
                        flag=0,
                        paired = paired)
+                
+        # Aggregate all fastq.gz files form different cell types
+        if(not bulk):
+            aggregate_fastqs(sample_working_dir, os.path.join(sample_working_dir, "bulkleft.fq.gz"), os.path.join(sample_working_dir, "bulkright.fq.gz"), paired)
 
 print('finished tumors')
 liquid_biopsy = params['liquid_biopsy']

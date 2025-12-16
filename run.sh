@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=snakemake_qc
-#SBATCH --ntasks=1      
-#SBATCH --cpus-per-task=1
+#SBATCH --ntasks=1  
+#SBATCH --cpus-per-task=20
 #SBATCH --mem-per-cpu=40G     
 #SBATCH --time=300:00:00      
 #SBATCH --output snakemake_qc.log
@@ -22,4 +22,4 @@ else
 fi
 
 echo "[INFO] Starting Snakemake run..."
-snakemake --use-conda --use-singularity --cores 4 --singularity-args '-B /scratch -B /cluster/work/bewi/members/gbotta:/cluster/work/bewi/members/gbotta:rw' --rerun-incomplete --keep-incomplete
+snakemake --use-conda --use-singularity --cores 20 --singularity-args '-B /scratch -B /cluster/work/bewi/members/gbotta:/cluster/work/bewi/members/gbotta:rw' --rerun-incomplete --keep-incomplete

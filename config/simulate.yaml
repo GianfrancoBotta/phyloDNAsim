@@ -17,9 +17,11 @@ r: 3.783884 # Ideally fitted on your data
 p: 0.0143027069773697 # Ideally fitted on your data
 paired: True
 WES: True
+bulk: False
 use_leaf_only: false
 # error_rate_list: [0.0, 0.0, 0.0, 0.00001, 0.00001, 0.0001, 0.001]
 error_rate_list: [0.001]
+# clone_list: [2,4,6,8,10] 
 clone_list: [2,4,6,8,10] 
 
 # Mutation rate categories (M_i in the paper)
@@ -34,6 +36,7 @@ ultrahigh_rates_list: [5.0e-8, 5.0e-7, 6.0e-7, 5.0e-8, 1.0e-7]
 
 # Sequencing coverage and population
 coverage_list: {"on_target": 50000, "off_target": 50}
+# coverage_list: {"on_target": 500, "off_target": 0.5}
 pop_size: 8.0e+8 # Effective population size (needed in coalescent theory)
 num_single_cells: 100
 liquid_biopsy: False
