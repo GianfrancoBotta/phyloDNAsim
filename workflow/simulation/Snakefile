@@ -1,0 +1,15 @@
+from snakemake.utils import min_version
+import os
+
+WORKDIR = "/cluster/work/bewi/members/gbotta/phyloDNAsim"
+configfile: os.path.join(WORKDIR, "workflow/simulation/config/config.yaml")
+
+min_version(config["snakemake_min_version"])
+
+container: f"docker://condaforge/mambaforge:{config['mambaforge_version']}" # to allow for reproducibility
+
+include: "rules/simulation.smk"
+
+rule all:
+    input:
+        os.path.join(WORKDIR, "results/simulation")

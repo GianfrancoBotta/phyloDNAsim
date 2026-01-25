@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=20
 #SBATCH --mem-per-cpu=40G     
 #SBATCH --time=300:00:00      
-#SBATCH --output snakemake_qc.log
+#SBATCH --output simulation.log
 #SBATCH --mail-type=END
 #SBATCH --mail-user=gbotta@ethz.ch
 

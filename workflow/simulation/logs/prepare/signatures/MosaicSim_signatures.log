@@ -1,0 +1,13 @@
+--2026-01-25 10:46:25--  https://raw.githubusercontent.com/CMUSchwartzLab/MosaicSim/refs/heads/main/data/signatures.txt
+Resolving proxy.service.consul (proxy.service.consul)... 10.205.212.167
+Connecting to proxy.service.consul (proxy.service.consul)|10.205.212.167|:3128... connected.
+Proxy request sent, awaiting response... 200 OK
+Length: 150027 (147K) [text/plain]
+Saving to: ‘/cluster/work/bewi/members/gbotta/phyloDNAsim/results/prepare/signatures/MosaicSim_signatures.txt’
+
+     0K .......... .......... .......... .......... .......... 34% 3.33M 0s
+    50K .......... .......... .......... .......... .......... 68% 3.37M 0s
+   100K .......... .......... .......... .......... ......    100% 3.62M=0.04s
+
+2026-01-25 10:46:25 (3.43 MB/s) - ‘/cluster/work/bewi/members/gbotta/phyloDNAsim/results/prepare/signatures/MosaicSim_signatures.txt’ saved [150027/150027]
+

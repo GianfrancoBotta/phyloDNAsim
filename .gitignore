@@ -3,13 +3,11 @@
 
 # Track the repo essentials
 !.gitignore
-!Snakefile
-!run.sh
-!config/
+!src/
 !workflow/
 
 # Track all normal files inside tracked directories
-!config/**/*
+!src/
 !workflow/**/*
 
 # Ignore hidden files inside tracked directories
