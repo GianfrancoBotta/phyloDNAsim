@@ -7,7 +7,7 @@
 !workflow/
 
 # Track all normal files inside tracked directories
-!src/
+!src/**/*
 !workflow/**/*
 
 # Ignore hidden files inside tracked directories
