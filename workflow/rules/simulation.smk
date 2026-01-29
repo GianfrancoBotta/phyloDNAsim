@@ -1,7 +1,8 @@
 import os
 
+SOURCEDIR = "/cluster/work/bewi/members/gbotta/SCICoNE"
 WORKDIR = "/cluster/work/bewi/members/gbotta/phyloDNAsim"
-configfile: os.path.join(WORKDIR, "workflow/simulation/config/config.yaml")
+configfile: os.path.join(WORKDIR, "workflow/config/config.yaml")
 
 # Get signatures for single-cell tumor data simulation
 rule download_MosaicSim_signatures:
@@ -19,17 +20,17 @@ rule download_MosaicSim_signatures:
 
 rule simulate_sc_tumor_data_phyloDNAsim:
     input:
-        genome="/cluster/work/bewi/members/gbotta/preprocessing/results/prepare/references/complete/fasta_files/ucsc_hg19.fa",
-        binned_bed="/cluster/work/bewi/members/gbotta/preprocessing/results/prepare/references/on_target/bed_files/on_target.binned.tuned.bed",
+        genome=os.path.join(SOURCEDIR, "results/prepare/references/fasta_files/ucsc_hg19.fa"),
+        binned_bed=os.path.join(SOURCEDIR, "results/prepare/references/bed_files/on_target.binned.tuned.bed"),
         signatures=os.path.join(WORKDIR, "results/prepare/signatures/MosaicSim_signatures.txt")
     output:
-        outdir=directory(os.path.join(WORKDIR, "results/simulation/"))
-    threads: 10
+        outdir=directory(os.path.join(WORKDIR, "results/simulation"))
+    threads: config["simulate_threads"]
     params:
-        yaml_config=os.path.join(WORKDIR, "workflow/simulation/config/simulate.yaml"),
+        yaml_config=os.path.join(WORKDIR, "workflow/config/simulate.yaml"),
     log:
         "logs/simulation/phyloDNAsim.log"
     conda:
         "../envs/phyloDNAsim.yaml"
     script:
-        "/cluster/work/bewi/members/gbotta/phyloDNAsim/src/simulation/ms_sim.py"
+        "../../src/phyloDNAsim.py"

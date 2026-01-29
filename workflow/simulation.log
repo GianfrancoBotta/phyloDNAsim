@@ -1,0 +1,32 @@
+[INFO] Detected Snakemake lock directory at .snakemake/locks.
+[INFO] Unlocking workflow...
+Building DAG of jobs...
+Unlocked working directory.
+[INFO] Starting Snakemake run...
+Assuming unrestricted shared filesystem usage.
+host: eu-fn-2t-05
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 50
+Rules claiming more threads will be scaled down.
+Job stats:
+job                                   count
+----------------------------------  -------
+all                                       1
+simulate_sc_tumor_data_phyloDNAsim        1
+total                                     2
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Jan 29 10:15:43 2026]
+localrule simulate_sc_tumor_data_phyloDNAsim:
+    input: /cluster/work/bewi/members/gbotta/SCICoNE/results/prepare/references/fasta_files/ucsc_hg19.fa, /cluster/work/bewi/members/gbotta/SCICoNE/results/prepare/references/bed_files/on_target.binned.tuned.bed, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/prepare/signatures/MosaicSim_signatures.txt
+    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation
+    log: logs/simulation/phyloDNAsim.log
+    jobid: 1
+    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation
+    threads: 50
+    resources: tmpdir=/scratch/tmp.55553758.gbotta
+Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
+Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_

@@ -2,7 +2,7 @@ from snakemake.utils import min_version
 import os
 
 WORKDIR = "/cluster/work/bewi/members/gbotta/phyloDNAsim"
-configfile: os.path.join(WORKDIR, "workflow/simulation/config/config.yaml")
+configfile: os.path.join(WORKDIR, "workflow/config/config.yaml")
 
 min_version(config["snakemake_min_version"])
 

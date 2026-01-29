@@ -10,6 +10,7 @@ import multiprocessing as mp
 import numpy as np
 import os
 import psutil
+import pandas as pd
 import random
 import re
 import shutil
@@ -19,6 +20,7 @@ import tskit
 
 from create_mutations import *
 from apply_mutations import *
+from adapt_targeted_regions import *
 
 def generateMatrix(the_matrix, list_of_weights, time_matrix):
     rate_matrix = getRateMatrix(time_matrix, list_of_weights)
@@ -97,8 +99,8 @@ def generateOrder(tree, time_matrix, list_of_rates):
         init_matrix.copy(), list_of_rates['BFB'], time_matrix)
     CHROMOTHRIPSIS_matrix, chromothripsis_rate = generateMatrix(
         init_matrix.copy(), list_of_rates['CHROMOTHRIP'], time_matrix)
-    CHROMOPLEXY_matrix, chromoplexy_rate = generateMatrix(
-        init_matrix.copy(), list_of_rates['CHROMOPLEX'], time_matrix)
+    # CHROMOPLEXY_matrix, chromoplexy_rate = generateMatrix(
+    #     init_matrix.copy(), list_of_rates['CHROMOPLEX'], time_matrix)
     INSERTIONSMALL_matrix, inssmall_rate = generateMatrix(
         init_matrix.copy(), list_of_rates['INSERTIONSMALL'], time_matrix)
     KATAEGIS_matrix, kat_rate = generateMatrix(
@@ -107,7 +109,7 @@ def generateOrder(tree, time_matrix, list_of_rates):
         init_matrix.copy(), list_of_rates['ANEUPLOIDY'], time_matrix)
     mutationedge_list = []
     fin_rate_list = [snv_rate, cnv_rate, deletion_rate, delsmall_rate, inv_rate, trans_rate,
-                     bfb_rate, chromothripsis_rate, inssmall_rate, kat_rate, an_rate] ##### ADD chromoplexy_rate
+                     bfb_rate, chromothripsis_rate, inssmall_rate, kat_rate, an_rate] # add chromoplexy_rate
     for i in range(pop-1):
         # Gives mutations from i to its parent ONLY
         parent_node = tree.parent(i)
@@ -120,7 +122,7 @@ def generateOrder(tree, time_matrix, list_of_rates):
             TRANSLOCATION_matrix[parent_node, i],
             BFB_matrix[parent_node, i],
             CHROMOTHRIPSIS_matrix[parent_node, i],
-            CHROMOPLEXY_matrix[parent_node, i],
+            # CHROMOPLEXY_matrix[parent_node, i],
             INSERTIONSMALL_matrix[parent_node, i],
             KATAEGIS_matrix[parent_node, i],
             ANEUPLOIDY_matrix[parent_node, i],
@@ -141,39 +143,36 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, muta
         'TRANSLOCATION': create_translocation,
         'BFB': create_BFB,
         'CHROMOTHRIP': create_chromothripsis,
-        'CHROMOPLEX': create_chromoplexy,
+        # 'CHROMOPLEX': create_chromoplexy,
         'INSERTIONSMALL': create_insertionsmall,
         'KATAEGIS': create_kataegis,
         'ANEUPLOIDY': create_aneuploidy
     }
     apply_functions = {
-        'SNV': [ApplySNPInfo, apply_SNP],
-        'CNV': [ApplyCNVInfo, apply_CNV],
-        'DEL': [ApplyDeletionInfo, apply_deletion],
-        'DELSMALL': [ApplyDeletionInfo, apply_deletion],
-        'INVERSION': [ApplyInversionInfo, apply_inversion],
-        'TRANSLOCATION': [ApplyTranslocationInfo, apply_translocation],
-        'BFB': [ApplyBFBInfo, apply_BFB],
-        'CHROMOTHRIP': [ApplyChromothripsisInfo, apply_chromothripsis],
-        'CHROMOPLEX': [ApplyChromoplexyInfo, apply_chromoplexy],
-        'INSERTIONSMALL': [ApplyInsertionInfo, apply_insertion],
-        'KATAEGIS': [ApplyKataegisInfo, apply_kataegis],
-        'ANEUPLOIDY': [ApplyAneuploidyInfo, apply_aneuploidy]
+        'SNV': apply_SNP,
+        'CNV': apply_CNV,
+        'DEL': apply_deletion,
+        'DELSMALL': apply_deletion,
+        'INVERSION': apply_inversion,
+        'TRANSLOCATION': apply_translocation,
+        'BFB': apply_BFB,
+        'CHROMOTHRIP':  apply_chromothripsis,
+        # 'CHROMOPLEX': apply_chromoplexy,
+        'INSERTIONSMALL': apply_insertion,
+        'KATAEGIS': apply_kataegis,
+        'ANEUPLOIDY': apply_aneuploidy
     }
     infos = {}
-    muts = {}
     infos[tot_nodes - 1] = []
-    muts[tot_nodes - 1] = []
     for path in list_of_paths:
         mutated_genome = copy.deepcopy(current_genome) # Create a copy not to modify directly the genome
         for i in range(len(path)-1):
             if(path[i+1] != (tot_nodes-1)):
                 c_infos = infos[path[i]].copy()
-                c_muts = muts[path[i]].copy()
                 current_muts = mutationedge_list[path[i+1]]
                 
                 for m_type in current_muts.keys():
-                    for m in current_muts[m_type]:
+                    for _ in current_muts[m_type]:
                         if(m_type == "SNV" and use_signatures):
                             info = save_functions[m_type](mutated_genome, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab)
                         else:
@@ -181,43 +180,65 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, muta
                         if info is None:
                             print("invalid")
                         c_infos.append(info)
-                        c_muts.append(m_type)
                         # Adjust mutations info for the mutated genomes (shift indices if there are two or more events on the same chromosome)
-                        val_info = apply_functions[m_type][0](**info)
-                        mutated_genome = apply_functions[m_type][1](mutated_genome, val_info)
+                        mutated_genome = apply_functions[m_type](mutated_genome, info)
                 infos[path[i+1]] = c_infos
-                muts[path[i+1]] = c_muts
-    return infos, muts
+    return infos
 
-def applyMutations(seqs, infos, muts, clone):
+def applyMutations(seqs, infos, clone):
     '''
     Creates a new genome for the given clone.
     '''
-    mut = muts[clone]
     info = infos[clone]
     functions = {
-        'SNV': [ApplySNPInfo, apply_SNP],
-        'CNV': [ApplyCNVInfo, apply_CNV],
-        'DEL': [ApplyDeletionInfo, apply_deletion],
-        'DELSMALL': [ApplyDeletionInfo, apply_deletion],
-        'INVERSION': [ApplyInversionInfo, apply_inversion],
-        'TRANSLOCATION': [ApplyTranslocationInfo, apply_translocation],
-        'BFB': [ApplyBFBInfo, apply_BFB],
-        'CHROMOTHRIP': [ApplyChromothripsisInfo, apply_chromothripsis],
-        'CHROMOPLEX': [ApplyChromoplexyInfo, apply_chromoplexy],
-        'INSERTIONSMALL': [ApplyInsertionInfo, apply_insertion],
-        'KATAEGIS': [ApplyKataegisInfo, apply_kataegis],
-        'ANEUPLOIDY': [ApplyAneuploidyInfo, apply_aneuploidy]
+        'SNV': apply_SNP,
+        'CNV': apply_CNV,
+        'DEL': apply_deletion,
+        'DELSMALL': apply_deletion,
+        'INVERSION': apply_inversion,
+        'TRANSLOCATION': apply_translocation,
+        'BFB': apply_BFB,
+        'CHROMOTHRIP':  apply_chromothripsis,
+        # 'CHROMOPLEX': apply_chromoplexy,
+        'INSERTIONSMALL': apply_insertion,
+        'KATAEGIS': apply_kataegis,
+        'ANEUPLOIDY': apply_aneuploidy
     }
     
     clone_seqs = copy.deepcopy(seqs)
-    for i, m in enumerate(mut):
-        mut_info = info[i]
-        val_info = functions[m][0](**mut_info)
-        clone_seqs = functions[m][1](clone_seqs, val_info)
+    for i in info:
+        m = i['event']
+        clone_seqs = functions[m](clone_seqs, i)
         
     return clone_seqs
 
+def adapt_targeted_regions(regions, infos, clone):
+    '''
+    Adapts the targeted regions based on the mutations.
+    '''
+    info = infos[clone]
+    functions = {
+        'CNV': adapt_CNV,
+        'DEL': adapt_deletion,
+        'DELSMALL': adapt_deletion,
+        'TRANSLOCATION': adapt_translocation,
+        'BFB': adapt_BFB,
+        'CHROMOTHRIP':  adapt_chromothripsis,
+        # 'CHROMOPLEX': adapt_chromoplexy,
+        'INSERTIONSMALL': adapt_insertion,
+        'ANEUPLOIDY': adapt_aneuploidy
+    }
+    
+    clone_regions = copy.deepcopy(regions)
+    for i in info:
+        m = i['event']
+        if m in ['SNV', 'INVERSION', 'KATAEGIS']:
+            continue
+        clone_regions = functions[m](clone_regions, i)
+        
+    return clone_regions
+    
+    
 def getfrag(r):
     return_val = 0
     while(return_val < r-20):
@@ -257,7 +278,7 @@ def split(string, length):
 def revc(sequence, tab):
     return sequence.translate(tab)[::-1]
 
-def wgsSim(ls, num_clones, coverage, rl, fl, floc, batch, alpha, erate, tab, infos, muts, r=None, p=None, flag=0, num_single_cells = 1, paired=False):
+def wgsSim(ls, num_clones, coverage, rl, fl, floc, batch, alpha, erate, tab, infos, r=None, p=None, flag=0, num_single_cells = 1, paired=False):
     # Open files to write
     if(flag == 0):
         f1 = gzip.open(os.path.join(floc, 'bulkleft.fq.gz'), 'wt')
@@ -294,12 +315,12 @@ def wgsSim(ls, num_clones, coverage, rl, fl, floc, batch, alpha, erate, tab, inf
         if(flag == 2): # Pick a clone for every single-cell if it is a single-cell simultation
             distn = getDirichletClone(num_clones, alpha)
             clone = pickdclone(distn, num_clones)
-            chroms = applyMutations(ls, infos, muts, clone)
+            chroms = applyMutations(ls, infos, clone)
         while(cov < target_cov[i]):
             if(flag == 1): # Pick a clone for every added coverage if it is a bulk simulation
                 distn = getDirichletClone(num_clones, alpha)
                 clone = pickdclone(distn, num_clones)
-                chroms = applyMutations(ls, infos, muts, clone)
+                chroms = applyMutations(ls, infos, clone)
             chromnum = 0
             for j in range(batch):
                 for chrom in chroms:
@@ -343,8 +364,8 @@ def wgsSim(ls, num_clones, coverage, rl, fl, floc, batch, alpha, erate, tab, inf
         f2.close()
     return(0)
 
-def targetedSim_bulk(thread_id, target_cov, prop_hc, ls, num_clones, rl, fl, floc, batch, exonDict, numchrommap, alpha, erate, tab, infos, muts, paired=False):
-    # per-thread output directory or prefix
+def targetedSim_bulk(thread_id, target_cov, prop_hc, ls, num_clones, rl, fl, floc, batch, regions, rev_numchrommap, alpha, erate, tab, infos, paired=False):
+    # Per-thread output directory or prefix
     thread_dir = os.path.join(floc, f"thread_{thread_id}")
     os.makedirs(thread_dir, exist_ok=True)
     # Open files to write
@@ -353,94 +374,91 @@ def targetedSim_bulk(thread_id, target_cov, prop_hc, ls, num_clones, rl, fl, flo
         f2 = io.BufferedWriter(gzip.open(os.path.join(thread_dir, 'threadright.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
     else:
         fl = rl
-    # Compute panel length to scale coverage and read quality
-    panel_size = float(sum((interval[1] - interval[0]) for cnum in range(25) for interval in exonDict[numchrommap[cnum]]))
+        
     # Initialize coverage
     cov = 0.0
-    while cov < target_cov:
-        if cov < target_cov*prop_hc:
-            clone = num_clones + 1 # sample healthy reads
-        else:
-            # Pick a clone for every added coverage in a bulk simulation
-            distn = getDirichletClone(num_clones, alpha)
-            clone = pickdclone(distn, num_clones)
-        chroms = applyMutations(ls, infos, muts, clone)
-        chromnum = 0
-        for j in range(batch):
-            for chrom in chroms:
-                if(len(chrom)==0): # Deleted chromosomes
-                    continue
-                # Sample intervals consistent with the coverage of each cell (for very low coverage)
-                k = math.ceil(len(exonDict[numchrommap[chromnum]]) * min(target_cov, 1))
-                sampled_intervals = random.sample(exonDict[numchrommap[chromnum]], k)
-                for interval in sampled_intervals:
-                    # Update coverage after each iteration
-                    cov += (2 * batch * rl / panel_size) if paired else (batch * rl / panel_size)
-                    startindex = random.randint(interval[0], interval[1])
-                    sub = chrom[startindex:startindex+fl]
-                    if random.random() > 0.5:
-                        sub = revc(sub, tab)
-                    random_str = ''.join(random.choices(
-                        string.ascii_letters, k=15))
-                    pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
-                    qual1 = 'K'*len(pair1)
-                    if(paired):
-                        pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
-                        qual2 = 'K'*len(pair2)
-                    f1.write(('\n'.join([f'@clone{clone}_{random_str}', pair1, '+', qual1]) + '\n').encode('utf-8'))
-                    if(paired):
-                        f2.write(('\n'.join([f'@clone{clone}_{random_str}', pair2, '+', qual2]) + '\n').encode('utf-8'))
-                chromnum += 1
+    clone_prop = [clone_prop * (1-prop_hc) for clone_prop in getDirichletClone(num_clones, alpha)]
+    clone_prop.append(1-sum(clone_prop))
+    
+    for clone in num_clones+1:
+        clone_target_cov = target_cov * clone_prop[clone]
+        chroms = applyMutations(ls, infos, clone)
+        mod_regions = adapt_targeted_regions(regions, infos, clone)
+        # Compute panel length to scale coverage and read quality
+        panel_size = (mod_regions['end'] - mod_regions['start']).sum()
+        while cov < clone_target_cov:
+            region = mod_regions.sample().iloc[0].tolist()
+            chrom = chroms[rev_numchrommap[region[0]]]
+            if len(chrom) == 0:
+                continue
+            # Update coverage in each iteration
+            cov += (2 * batch * rl / panel_size) if paired else (batch * rl / panel_size)
+            if((region[2]-region[1]) < fl):
+                startindex = region[1]
+            else:
+                startindex = random.randint(region[1], region[2]-fl)
+            sub = chrom[startindex:startindex + fl]
+            if random.random() > 0.5:
+                sub = revc(sub, tab)
+            random_str = ''.join(random.choices(string.ascii_letters, k=15))
+            pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
+            qual1 = 'K'*len(pair1)
+            if(paired):
+                pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
+                qual2 = 'K'*len(pair2)
+            f1.write(('\n'.join([f'@clone{clone}_{random_str}', pair1, '+', qual1]) + '\n').encode('utf-8'))
+            if(paired):
+                f2.write(('\n'.join([f'@clone{clone}_{random_str}', pair2, '+', qual2]) + '\n').encode('utf-8'))
     # Close files
     f1.close()
     if(paired):
         f2.close()
     return(0)
 
-def targetedSim_sc(cell_id, healthy, target_cov, ls, num_clones, rl, fl, floc, batch, exonDict, numchrommap, alpha, erate, tab, infos, muts, paired=False):
-    # per-cell output directory or prefix
+def targetedSim_sc(cell_id, healthy, target_cov, ls, num_clones, rl, fl, floc, batch, regions, rev_numchrommap, alpha, erate, tab, infos, paired=False):
+    # Per-cell output directory or prefix
     cell_dir = os.path.join(floc, f"cell_{cell_id}")
     os.makedirs(cell_dir, exist_ok=True)
+    # Open files to write
     f1 = io.BufferedWriter(gzip.open(os.path.join(cell_dir, 'scleft.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
     if paired:
         f2 = io.BufferedWriter(gzip.open(os.path.join(cell_dir, 'scright.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
-    
-    # Compute panel length to scale coverage and read quality
-    panel_size = float(sum((interval[1] - interval[0]) for cnum in range(25) for interval in exonDict[numchrommap[cnum]]))
+        
+    # Initialize coverage
     cov = 0.0
-
     if healthy:
         clone = num_clones + 1
     else:
-        distn = getDirichletClone(num_clones, alpha)
+        distn = getDirichletClone(num_clones-1, alpha)
         clone = pickdclone(distn, num_clones)
-    chroms = applyMutations(ls, infos, muts, clone)
-
+    chroms = applyMutations(ls, infos, clone)
+    mod_regions = adapt_targeted_regions(regions, infos, clone)
+    # Compute panel length to scale coverage and read quality
+    panel_size = (mod_regions['end'] - mod_regions['start']).sum()
+    
     while cov < target_cov:
-        chromnum = 0
-
-        for j in range(batch):
-            for chrom in chroms:
-                if len(chrom) == 0:
-                    continue
-                k = math.ceil(len(exonDict[numchrommap[chromnum]]) * min(target_cov, 1))
-                sampled_intervals = random.sample(exonDict[numchrommap[chromnum]], k)
-                for interval in sampled_intervals:
-                    cov += (2 * batch * rl / panel_size) if paired else (batch * rl / panel_size)
-                    startindex = random.randint(interval[0], interval[1])
-                    sub = chrom[startindex:startindex + fl]
-                    if random.random() > 0.5:
-                        sub = revc(sub, tab)
-                    random_str = ''.join(random.choices(string.ascii_letters, k=15))
-                    pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
-                    qual1 = 'K'*len(pair1)
-                    if(paired):
-                        pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
-                        qual2 = 'K'*len(pair2)
-                    f1.write(('\n'.join([f'@cell{cell_id}_clone{clone}_{random_str}', pair1, '+', qual1]) + '\n').encode('utf-8'))
-                    if(paired):
-                        f2.write(('\n'.join([f'@cell{cell_id}_clone{clone}_{random_str}', pair2, '+', qual2]) + '\n').encode('utf-8'))
-                chromnum += 1
+        region = mod_regions.sample().iloc[0].tolist()
+        chrom = chroms[rev_numchrommap[region[0]]]
+        if len(chrom) == 0:
+            continue
+        # Update coverage in each iteration
+        cov += (2 * batch * rl / panel_size) if paired else (batch * rl / panel_size)
+        if((region[2]-region[1]) < fl):
+            startindex = region[1]
+        else:
+            startindex = random.randint(region[1], region[2]-fl)
+        sub = chrom[startindex:startindex + fl]
+        if random.random() > 0.5:
+            sub = revc(sub, tab)
+        random_str = ''.join(random.choices(string.ascii_letters, k=15))
+        pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
+        qual1 = 'K'*len(pair1)
+        if(paired):
+            pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
+            qual2 = 'K'*len(pair2)
+        f1.write(('\n'.join([f'@cell{cell_id}_clone{clone}_{random_str}', pair1, '+', qual1]) + '\n').encode('utf-8'))
+        if(paired):
+            f2.write(('\n'.join([f'@cell{cell_id}_clone{clone}_{random_str}', pair2, '+', qual2]) + '\n').encode('utf-8'))
     f1.close()
     if paired:
         f2.close()
