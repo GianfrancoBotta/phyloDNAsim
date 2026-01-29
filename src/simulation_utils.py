@@ -429,7 +429,7 @@ def targetedSim_sc(cell_id, healthy, target_cov, ls, num_clones, rl, fl, floc, b
     if healthy:
         clone = num_clones + 1
     else:
-        distn = getDirichletClone(num_clones-1, alpha)
+        distn = getDirichletClone(num_clones, alpha)
         clone = pickdclone(distn, num_clones)
     chroms = applyMutations(ls, infos, clone)
     mod_regions = adapt_targeted_regions(regions, infos, clone)
