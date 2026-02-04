@@ -124,8 +124,10 @@ for num_clones in num_clones_list:
     for sample in range(num_samples):
         sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}')
         os.makedirs(sample_working_dir, exist_ok=True)
-        with open(os.path.join(sample_working_dir, 'parameter_list.txt'), 'w') as f:
+        with open(os.path.join(sample_working_dir, 'parameter_list.yaml'), 'w') as f:
             f.write('num leaves: ' + str(num_clones)+'\n')
+            f.write('num internal nodes: ' + str(int_nodes+1)+'\n')
+            f.write('root node: ' + str(root_node)+'\n')
             f.write('dir_conc: ' + str(alpha)+'\n')
             f.write('cell pop: ' + str(pop)+'\n')
             f.write('coverage: ' + str(coverage)+'\n')
@@ -137,7 +139,7 @@ for num_clones in num_clones_list:
             f.write('rates of variants: ' + str(avg_rate_list)+'\n')
             f.write('full poisson time: ' + str(depth) + '\n')
             f.write('error rate: ' + str(error_rate) + '\n')
-            f.write('proportions of healthy cells' + str(prop_hc) + '\n')
+            f.write('proportions of healthy cells: ' + str(prop_hc) + '\n')
             if(not bulk):
                 f.write('NB parameters: r=' + str(r) + ' p=' + str(p) + '\n')
 
@@ -244,8 +246,10 @@ if(liquid_biopsy):
         for sample in range(num_samples):
                 sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}')
                 os.makedirs(sample_working_dir, exist_ok=True)
-                with open(os.path.join(sample_working_dir, 'parameter_list_lb.txt'), 'w') as f:
+                with open(os.path.join(sample_working_dir, 'parameter_list_lb.yaml'), 'w') as f:
                     f.write('num leaves: ' + str(num_clones)+'\n')
+                    f.write('num internal nodes: ' + str(int_nodes+1)+'\n')
+                    f.write('root node: ' + str(root_node)+'\n')
                     f.write('dir_conc: ' + str(alpha)+'\n')
                     f.write('cell pop: ' + str(pop)+'\n')
                     f.write('coverage: ' + str(coverage)+'\n')

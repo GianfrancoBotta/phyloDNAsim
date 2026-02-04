@@ -55,7 +55,7 @@ def create_insertionsmall(seqs, numchrommap, bases=['A', 'C', 'T', 'G']):
     ins_str = ''
     for i in range(number_of_bases_to_insert):
         ins_str = ins_str + random.choice(bases)
-    return {'insertion': ins_str, 'pos': pos, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'insertion'}
+    return {'insertion': ins_str, 'pos': pos, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'INSERTIONSMALL'}
 
 def create_deletionsmall(seqs, numchrommap):
     valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
@@ -65,7 +65,7 @@ def create_deletionsmall(seqs, numchrommap):
     n = len(seqs[chrom])
     stidx = random.randint(0, n-1)
     edidx = stidx + random.randint(1, 15)
-    return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'deletion'}
+    return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'DELSMALL'}
 
 def create_CNV(seqs, numchrommap):
     valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
@@ -96,7 +96,7 @@ def create_aneuploidy(seqs, numchrommap):
         rep_num = 0
     else: # Insertion with probability 0.8
         rep_num = random.randint(2, max_reps)
-    return {'rep_num': rep_num, 'chrom_length': len(seqs[chrom]), 'chrom_num': chrom, 'chrom_name': numchrommap[chrom],  'event': 'aneuploidy'}
+    return {'rep_num': rep_num, 'chrom_length': len(seqs[chrom]), 'chrom_num': chrom, 'chrom_name': numchrommap[chrom],  'event': 'ANEUPLOIDY'}
 
 def create_deletion(seqs, numchrommap):
     valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
@@ -113,7 +113,7 @@ def create_deletion(seqs, numchrommap):
         counter += 1
     stidx = random.randint(0, n-1)
     edidx = min(stidx + int(dist), n-1)
-    return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'deletion'}
+    return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'DEL'}
 
 def create_inversion(seqs, numchrommap):
     valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
@@ -130,7 +130,7 @@ def create_inversion(seqs, numchrommap):
         counter += 1
     stidx = random.randint(0, n-1)
     edidx = min(stidx + int(dist), n-1)
-    return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'inversion'}
+    return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'INVERSION'}
 
 def create_kataegis(seqs, numchrommap):
     '''
@@ -150,10 +150,10 @@ def create_kataegis(seqs, numchrommap):
         counter += 1
     stidx = random.randint(0, n-1)
     edidx = min(stidx + int(dist), n-1)
-    type_of_variation = random.randint(0, 2) # Consider picking 1 less frequently
     idx = stidx
     res = []
     for c in seqs[chrom][stidx:edidx]:
+        type_of_variation = random.randint(0, 2)
         if random.random() < 0.8 and c == ord('C'):
             if(type_of_variation == 0):
                 mut = 'T'
@@ -163,7 +163,7 @@ def create_kataegis(seqs, numchrommap):
                 mut = 'G'
             res.append({'chrom_num': chrom, 'pos': idx, 'char': mut})
         idx = idx + 1
-    return {'start': stidx, 'end': edidx, 'mut': res, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'kataegis'}
+    return {'start': stidx, 'end': edidx, 'mut': res, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'KATAEGIS'}
 
 def create_translocation(seqs, numchrommap):
     valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
@@ -185,7 +185,7 @@ def create_translocation(seqs, numchrommap):
                'bkpt1': bkpt1,
                'bkpt2': bkpt2,
                'normal': True,
-               'event': 'translocation'}
+               'event': 'TRANSLOCATION'}
     else:
         res = {'chrom_num1': chrom[0],
                'chrom_name1': numchrommap[chrom[0]],
@@ -196,7 +196,7 @@ def create_translocation(seqs, numchrommap):
                'bkpt1': bkpt1,
                'bkpt2': bkpt2,
                'normal': False,
-               'event': 'translocation'}
+               'event': 'TRANSLOCATION'}
     return res
 
 def create_chromothripsis(seqs, numchrommap):
@@ -218,10 +218,11 @@ def create_chromothripsis(seqs, numchrommap):
         stidx = random.randint(0, n-1)
         edidx = min(stidx + int(dist), n-1)
         dist = edidx - stidx
-    breakpoints = numpy_choices(int(edidx-stidx), splits) # Returns locations of breakpoints
+    breakpoints = list(numpy_choices(int(dist), splits)) # Returns locations of breakpoints
+    breakpoints.append(int(dist)-1)
     rearrange = np.random.permutation(splits).tolist()
     inversion = [0 if random.random() < 0.5 else 1 for _ in range(len(breakpoints)+1)]
-    return {'start': stidx, 'end': edidx, 'bkpts': list(breakpoints), 'order': rearrange, 'reverse': inversion, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'chromothripsis'}
+    return {'start': stidx, 'end': edidx, 'bkpts': breakpoints, 'order': rearrange, 'reverse': inversion, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'CHROMOTHRIP'}
 
 def create_BFB(seqs, numchrommap):
     valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
@@ -250,7 +251,7 @@ def create_BFB(seqs, numchrommap):
 #         for bkpt in breakpoints:
 #             target_chrom = random.sample(chrom, 1)
 #             all_bkpts = [chrom[i], target_chrom, bkpt]
-#     return {'bkpts': all_bkpts, 'chrom_num': chrom, 'chrom_name': [numchrommap[ch] for ch in chrom], 'event': 'chromoplexy'}
+#     return {'bkpts': all_bkpts, 'chrom_num': chrom, 'chrom_name': [numchrommap[ch] for ch in chrom], 'event': 'CHROMOPLEX'}
 
 # Functions to handle chromosomes and clones' proportions    
     

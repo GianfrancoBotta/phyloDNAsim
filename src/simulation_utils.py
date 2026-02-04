@@ -45,7 +45,7 @@ def generateMatrix(the_matrix, list_of_weights, time_matrix):
     return the_matrix, avg_rate
 
 
-def getTree(num_clones, pop, working_dir, seq_len=1):
+def getTree(num_clones, pop, working_dir):
     # tree_sequence = msprime.sim_ancestry(samples=num_clones, population_size=pop, recombination_rate=0, sequence_length=seq_len, random_seed=9, ploidy=1)
     tree_sequence = msprime.simulate(sample_size=num_clones, Ne=pop, recombination_rate=0)
     tree_sequence.dump(working_dir + '/tree_sequence.tree')
@@ -178,7 +178,7 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, muta
                         else:
                             info = save_functions[m_type](mutated_genome, numchrommap)
                         if info is None:
-                            print("invalid")
+                            print("Invalid information to apply mutations.")
                         c_infos.append(info)
                         # Adjust mutations info for the mutated genomes (shift indices if there are two or more events on the same chromosome)
                         mutated_genome = apply_functions[m_type](mutated_genome, info)

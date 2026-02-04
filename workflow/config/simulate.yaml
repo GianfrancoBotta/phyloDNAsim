@@ -34,7 +34,7 @@ high_rates_list: [9.0e-8, 7.0e-8, 5.0e-8, 3.0e-8]
 
 # Sequencing coverage and population
 # coverage: 500000
-coverage: 0.05
+coverage: 0.0005
 pop_size: 8.0e+8 # Effective population size (needed in coalescent theory)
 num_single_cells: 5000
 

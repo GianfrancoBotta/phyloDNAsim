@@ -45,7 +45,7 @@ def apply_translocation(seqs, info):
         fp2 = seq2[:info['bkpt2']]
         sp2 = seq2[info['bkpt2']:]
         seq1 = fp1
-        seq2 = fp2 + sp2 + sp1
+        seq2 = fp2 + sp1 + sp2
     seqs[info['chrom_num1']] = seq1
     seqs[info['chrom_num2']] = seq2
     return seqs
