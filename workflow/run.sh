@@ -2,13 +2,13 @@
 #SBATCH --job-name=run_simulation
 #SBATCH --ntasks=1  
 #SBATCH --cpus-per-task=50
-#SBATCH --mem-per-cpu=30G     
+#SBATCH --mem-per-cpu=16G     
 #SBATCH --time=300:00:00      
 #SBATCH --output simulation.log
 #SBATCH --mail-type=END
 #SBATCH --mail-user=gbotta@ethz.ch
 
-source ~/.bashrc
+source /cluster/home/gbotta/miniforge3/etc/profile.d/conda.sh
 conda activate snakemake
 module load eth_proxy
 

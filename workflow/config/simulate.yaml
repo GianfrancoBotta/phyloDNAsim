@@ -8,7 +8,7 @@ signature_alpha: 10
 
 # Simulation setup
 # num_samples_list: [10,20,30]
-num_samples: 10
+num_samples: 2
 num_tumors: 1
 read_len: 150
 frag_len: 400 # Extract from bam
@@ -17,12 +17,11 @@ alpha_list: [10]
 r: 3.783884 # Ideally fitted on your data
 p: 0.0143027069773697 # Ideally fitted on your data
 paired: True
-WES: True
+targeted: True
 bulk: False
 # error_rate_list: [0.0, 0.0, 0.0, 0.00001, 0.00001, 0.0001, 0.001]
 error_rate_list: [0.001]
-# clone_list: [2,4,6,8,10]
-clone_list: [4,8] 
+clone_list: [4, 6, 8]
 
 # Mutation rate categories (M_i in the paper)
 genome_length: 3095693983.0
@@ -30,21 +29,20 @@ mutational_events: ["SNV", "CNV", "DEL", "DELSMALL", "INVERSION", "TRANSLOCATION
 ultralow_rates_list: [7.0e-10, 5.0e-10, 3.0e-10]
 low_rates_list: [5.0e-9, 2.0e-9, 9.0e-10]
 medium_rates_list: [1.0e-8, 9.0e-9, 7.0e-9]
-high_rates_list: [9.0e-8, 7.0e-8, 5.0e-8, 3.0e-8]
+high_rates_list: [7.0e-8, 5.0e-8, 3.0e-8]
 
 # Sequencing coverage and population
-# coverage: 500000
-coverage: 0.0005
+coverage: 500000
 pop_size: 8.0e+8 # Effective population size (needed in coalescent theory)
-num_single_cells: 5000
+num_single_cells: 2000
 
-# Batch processing
-batch_size: 1
-subblock_size: 1
+# # Batch processing
+# batch_size: 1
+# subblock_size: 1
 
 # Liquid biopsy
 liquid_biopsy: True
 read_len_lb: 140
 frag_len_lb: 400 # Extract from bam
-coverage_lb: 2
-prop_hc_lb: 0.95
+coverage_lb: 2000
+prop_hc_lb: 0

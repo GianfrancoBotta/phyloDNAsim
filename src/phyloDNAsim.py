@@ -42,7 +42,7 @@ frag_len = params['frag_len']
 coverage = params['coverage']
 num_single_cells = params['num_single_cells']
 paired = params['paired']
-WES = params['WES']
+targeted = params['targeted']
 error_rate = random.choice(params['error_rate_list'])
 r = params['r']
 p = params['p']
@@ -54,8 +54,8 @@ chrom_names, chroms = map(list, zip(*((record.id, bytearray(str(record.seq).uppe
 numchrommap = dict(zip(range(len(chrom_names)), chrom_names))
 rev_numchrommap = {v: k for k, v in numchrommap.items()}
 
-if(WES):
-    EXON_FILE = snakemake.input['binned_bed']
+if targeted:
+    EXON_FILE = snakemake.input['bed']
     total_num_intervals = 0
     exonDict = {}
     panel_chroms = [bytearray() for _ in chroms]
@@ -77,7 +77,7 @@ mut_events = params['mutational_events']
 list_of_rates = {
     "SNV": params['high_rates_list'],
     "CNV": params['high_rates_list'],
-    "DEL": params['medium_rates_list'],
+    "DEL": params['low_rates_list'],
     "DELSMALL": params['medium_rates_list'],
     "INVERSION": params['low_rates_list'],
     "TRANSLOCATION": params['low_rates_list'],
@@ -86,8 +86,10 @@ list_of_rates = {
     # "CHROMOPLEX": params['ultralow_rates_list'],
     "INSERTIONSMALL": params['medium_rates_list'],
     "KATAEGIS": params['ultralow_rates_list'],
-    "ANEUPLOIDY": params['low_rates_list']
+    "ANEUPLOIDY": params['ultralow_rates_list']
 }
+if targeted:
+    list_of_rates = {k: [float(r) / 10 for r in v] for k, v in list_of_rates.items()}
 
 num_tumors = params['num_tumors']
 num_samples = params['num_samples']
@@ -95,8 +97,7 @@ num_clones_list = params['clone_list']
 for num_clones in num_clones_list:
     alpha = params['alpha_list'][0]
     tot_nodes = 2*num_clones - 1
-    root_node = tot_nodes - 1
-    int_nodes = root_node - 1
+    int_nodes = tot_nodes - 1
     pop = params['pop_size']
     clone_number_dir = f'clone_{num_clones}'
     working_dir = os.path.join(storage_dir , clone_number_dir)
@@ -117,7 +118,9 @@ for num_clones in num_clones_list:
         numchrommap,
         params['list_of_bases'],
         params['list_of_pairs'],
-        tab)
+        tab,
+        targeted,
+        regions)
     with open(os.path.join(working_dir, 'information_list.json'), 'w') as f:
         json.dump(infos, f, indent=4)
 
@@ -126,8 +129,7 @@ for num_clones in num_clones_list:
         os.makedirs(sample_working_dir, exist_ok=True)
         with open(os.path.join(sample_working_dir, 'parameter_list.yaml'), 'w') as f:
             f.write('num leaves: ' + str(num_clones)+'\n')
-            f.write('num internal nodes: ' + str(int_nodes+1)+'\n')
-            f.write('root node: ' + str(root_node)+'\n')
+            f.write('num internal nodes: ' + str(int_nodes)+'\n')
             f.write('dir_conc: ' + str(alpha)+'\n')
             f.write('cell pop: ' + str(pop)+'\n')
             f.write('coverage: ' + str(coverage)+'\n')
@@ -135,7 +137,7 @@ for num_clones in num_clones_list:
             f.write('read len: ' + str(read_len)+'\n')
             f.write('frag len: ' + str(frag_len)+'\n')
             f.write('paired: ' + str(paired)+'\n')
-            f.write('WES: ' + str(WES)+'\n')
+            f.write('targeted: ' + str(targeted)+'\n')
             f.write('rates of variants: ' + str(avg_rate_list)+'\n')
             f.write('full poisson time: ' + str(depth) + '\n')
             f.write('error rate: ' + str(error_rate) + '\n')
@@ -143,44 +145,42 @@ for num_clones in num_clones_list:
             if(not bulk):
                 f.write('NB parameters: r=' + str(r) + ' p=' + str(p) + '\n')
 
-        if(WES):
+        if targeted:
             if bulk: # Bulk simulation
-                targetedSim_bulk_parallel(prop_hc,
-                                          coverage,
-                                          snakemake.threads,
-                                          chroms,
-                                          int_nodes,
-                                          read_len,
-                                          frag_len,
-                                          sample_working_dir,
-                                          params['batch_size'],
-                                          regions,
-                                          rev_numchrommap,
-                                          alpha,
-                                          error_rate,
-                                          tab,
-                                          infos,
-                                          paired)
+                clone_prop = targetedSim_bulk_parallel(prop_hc = prop_hc,
+                                                       coverage = coverage,
+                                                       num_clones = int_nodes,
+                                                       alpha = alpha,
+                                                       threads = snakemake.threads,
+                                                       ls = chroms,
+                                                       rl = read_len,
+                                                       fl = frag_len,
+                                                       floc = sample_working_dir,
+                                                       regions = regions,
+                                                       rev_numchrommap = rev_numchrommap,
+                                                       erate = error_rate,
+                                                       tab = tab,
+                                                       infos = infos,
+                                                       paired = paired)
             else:
-                targetedSim_sc_parallel(num_single_cells,
-                                        prop_hc,
-                                        coverage,
-                                        r,
-                                        p,
-                                        snakemake.threads,
-                                        chroms,
-                                        int_nodes,
-                                        read_len,
-                                        frag_len,
-                                        sample_working_dir,
-                                        params['batch_size'],
-                                        regions,
-                                        rev_numchrommap,
-                                        alpha,
-                                        error_rate,
-                                        tab,
-                                        infos,
-                                        paired)
+                clone_prop = targetedSim_sc_parallel(num_single_cells = num_single_cells,
+                                                     prop_hc = prop_hc,
+                                                     coverage = coverage,
+                                                     num_clones = int_nodes,
+                                                     alpha = alpha,
+                                                     r = r,
+                                                     p = p,
+                                                     threads = snakemake.threads,
+                                                     ls = chroms,
+                                                     rl = read_len,
+                                                     fl = frag_len,
+                                                     floc = sample_working_dir,
+                                                     regions = regions,
+                                                     rev_numchrommap = rev_numchrommap,
+                                                     erate = error_rate,
+                                                     tab = tab,
+                                                     infos = infos,
+                                                     paired = paired)
         else:            
             if bulk: # Bulk simulation
                 wgsSim(ls = chroms,
@@ -189,7 +189,6 @@ for num_clones in num_clones_list:
                     rl = read_len,
                     fl = frag_len,
                     floc = sample_working_dir,
-                    batch = params['batch_size'],
                     alpha = alpha,
                     erate = error_rate,
                     tab = tab,
@@ -204,7 +203,6 @@ for num_clones in num_clones_list:
                     rl = read_len,
                     fl = frag_len,
                     floc = sample_working_dir,
-                    batch = params['batch_size'],
                     alpha = alpha,
                     erate = error_rate,
                     tab = tab,
@@ -239,8 +237,7 @@ if(liquid_biopsy):
     for num_clones in num_clones_list:
         alpha = params['alpha_list'][0]
         tot_nodes = 2*num_clones - 1
-        root_node = tot_nodes - 1
-        int_nodes = root_node - 1
+        int_nodes = tot_nodes - 1
         clone_number_dir = f'clone_{num_clones}'
         working_dir = os.path.join(storage_dir , clone_number_dir)
         for sample in range(num_samples):
@@ -248,8 +245,7 @@ if(liquid_biopsy):
                 os.makedirs(sample_working_dir, exist_ok=True)
                 with open(os.path.join(sample_working_dir, 'parameter_list_lb.yaml'), 'w') as f:
                     f.write('num leaves: ' + str(num_clones)+'\n')
-                    f.write('num internal nodes: ' + str(int_nodes+1)+'\n')
-                    f.write('root node: ' + str(root_node)+'\n')
+                    f.write('num internal nodes: ' + str(int_nodes)+'\n')
                     f.write('dir_conc: ' + str(alpha)+'\n')
                     f.write('cell pop: ' + str(pop)+'\n')
                     f.write('coverage: ' + str(coverage)+'\n')
@@ -257,29 +253,28 @@ if(liquid_biopsy):
                     f.write('read len: ' + str(read_len_lb)+'\n')
                     f.write('frag len: ' + str(frag_len_lb)+'\n')
                     f.write('paired: ' + str(paired)+'\n')
-                    f.write('WES: ' + str(WES)+'\n')
+                    f.write('targeted: ' + str(targeted)+'\n')
                     f.write('rates of variants: ' + str(avg_rate_list)+'\n')
                     f.write('full poisson time: ' + str(depth) + '\n')
                     f.write('error rate: ' + str(error_rate) + '\n')
                     f.write('proportions of healthy cells: ' + str(prop_hc) + '\n')
 
-                if(WES):
-                    targetedSim_bulk_parallel(prop_hc,
-                                              coverage,
-                                              snakemake.threads,
-                                              chroms,
-                                              int_nodes,
-                                              read_len_lb,
-                                              frag_len_lb,
-                                              sample_working_dir,
-                                              params['batch_size'],
-                                              regions,
-                                              rev_numchrommap,
-                                              alpha,
-                                              error_rate,
-                                              tab,
-                                              infos,
-                                              paired)
+                if targeted:
+                    clone_prop = targetedSim_bulk_parallel(prop_hc = prop_hc,
+                                                           coverage = coverage,
+                                                           num_clones = int_nodes,
+                                                           alpha = alpha,
+                                                           threads = snakemake.threads,
+                                                           ls = chroms,
+                                                           rl = read_len_lb,
+                                                           fl = frag_len_lb,
+                                                           floc = sample_working_dir,
+                                                           regions = regions,
+                                                           rev_numchrommap = rev_numchrommap,
+                                                           erate = error_rate,
+                                                           tab = tab,
+                                                           infos = infos,
+                                                           paired = paired)
                 
                 aggregate_fastqs(sample_working_dir, os.path.join(sample_working_dir, "ctleft.fq.gz"), os.path.join(sample_working_dir, "ctright.fq.gz"), paired)
 

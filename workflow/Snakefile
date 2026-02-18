@@ -12,4 +12,4 @@ include: "rules/simulation.smk"
 
 rule all:
     input:
-        os.path.join(WORKDIR, "results/simulation")
+        os.path.join(WORKDIR, "results/simulation_new")

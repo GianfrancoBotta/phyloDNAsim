@@ -133,7 +133,7 @@ def generateOrder(tree, time_matrix, list_of_rates):
         mutationedge_list.append(ordered_muts)
     return mutationedge_list, fin_rate_list
 
-def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, mutationedge_list, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab):
+def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, mutationedge_list, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab, targeted, regions):
     save_functions = {
         'SNV': (create_SNPSig) if use_signatures else (create_speedSNP),
         'CNV': create_CNV,
@@ -174,9 +174,9 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, muta
                 for m_type in current_muts.keys():
                     for _ in current_muts[m_type]:
                         if(m_type == "SNV" and use_signatures):
-                            info = save_functions[m_type](mutated_genome, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab)
+                            info = save_functions[m_type](mutated_genome, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab, targeted, regions)
                         else:
-                            info = save_functions[m_type](mutated_genome, numchrommap)
+                            info = save_functions[m_type](mutated_genome, numchrommap, targeted, regions)
                         if info is None:
                             print("Invalid information to apply mutations.")
                         c_infos.append(info)
@@ -364,7 +364,7 @@ def wgsSim(ls, num_clones, coverage, rl, fl, floc, batch, alpha, erate, tab, inf
         f2.close()
     return(0)
 
-def targetedSim_bulk(thread_id, target_cov, prop_hc, ls, num_clones, rl, fl, floc, batch, regions, rev_numchrommap, alpha, erate, tab, infos, paired=False):
+def targetedSim_bulk(thread_id, clone_prop, target_cov, num_clones, ls, rl, fl, floc, regions, rev_numchrommap, erate, tab, infos, paired=False):
     # Per-thread output directory or prefix
     thread_dir = os.path.join(floc, f"thread_{thread_id}")
     os.makedirs(thread_dir, exist_ok=True)
@@ -377,27 +377,40 @@ def targetedSim_bulk(thread_id, target_cov, prop_hc, ls, num_clones, rl, fl, flo
         
     # Initialize coverage
     cov = 0.0
-    clone_prop = [clone_prop * (1-prop_hc) for clone_prop in getDirichletClone(num_clones, alpha)]
-    clone_prop.append(1-sum(clone_prop))
     
-    for clone in num_clones+1:
+    for clone in range(num_clones+1):
         clone_target_cov = target_cov * clone_prop[clone]
         chroms = applyMutations(ls, infos, clone)
         mod_regions = adapt_targeted_regions(regions, infos, clone)
-        # Compute panel length to scale coverage and read quality
+        
+        # Compute panel length to scale coverage and read quality and sampling weights
         panel_size = (mod_regions['end'] - mod_regions['start']).sum()
+        weights = mod_regions['end'] - mod_regions['start']
+        
         while cov < clone_target_cov:
-            region = mod_regions.sample().iloc[0].tolist()
+            region = mod_regions.sample(weights=weights).iloc[0].tolist()
             chrom = chroms[rev_numchrommap[region[0]]]
             if len(chrom) == 0:
                 continue
-            # Update coverage in each iteration
-            cov += (2 * batch * rl / panel_size) if paired else (batch * rl / panel_size)
             if((region[2]-region[1]) < fl):
                 startindex = region[1]
             else:
                 startindex = random.randint(region[1], region[2]-fl)
-            sub = chrom[startindex:startindex + fl]
+                            
+            # Update coverage in each iteration
+            if((region[2]-startindex) < rl):
+                cov += (2 * (region[2]-startindex) / panel_size) if paired else ((region[2]-startindex) / panel_size)
+            else:
+                cov += (2 * rl / panel_size) if paired else (rl / panel_size)
+        
+            # Extrct the read
+            if((region[2]-region[1]) < fl and (region[2]-region[1]) > rl):
+                sub = chrom[startindex:startindex + region[2]-region[1]]
+            elif((region[2]-region[1]) < rl):
+                sub = chrom[startindex:startindex + rl]
+            else:
+                sub = chrom[startindex:startindex + fl]
+                
             if random.random() > 0.5:
                 sub = revc(sub, tab)
             random_str = ''.join(random.choices(string.ascii_letters, k=15))
@@ -415,7 +428,7 @@ def targetedSim_bulk(thread_id, target_cov, prop_hc, ls, num_clones, rl, fl, flo
         f2.close()
     return(0)
 
-def targetedSim_sc(cell_id, healthy, target_cov, ls, num_clones, rl, fl, floc, batch, regions, rev_numchrommap, alpha, erate, tab, infos, paired=False):
+def targetedSim_sc(cell_id, clone, target_cov, ls, rl, fl, floc, regions, rev_numchrommap, erate, tab, infos, paired=False):
     # Per-cell output directory or prefix
     cell_dir = os.path.join(floc, f"cell_{cell_id}")
     os.makedirs(cell_dir, exist_ok=True)
@@ -426,28 +439,37 @@ def targetedSim_sc(cell_id, healthy, target_cov, ls, num_clones, rl, fl, floc, b
         
     # Initialize coverage
     cov = 0.0
-    if healthy:
-        clone = num_clones + 1
-    else:
-        distn = getDirichletClone(num_clones, alpha)
-        clone = pickdclone(distn, num_clones)
     chroms = applyMutations(ls, infos, clone)
     mod_regions = adapt_targeted_regions(regions, infos, clone)
-    # Compute panel length to scale coverage and read quality
+    
+    # Compute panel length to scale coverage and read quality and sampling weights
     panel_size = (mod_regions['end'] - mod_regions['start']).sum()
+    weights = mod_regions['end'] - mod_regions['start']
     
     while cov < target_cov:
-        region = mod_regions.sample().iloc[0].tolist()
+        region = mod_regions.sample(weights=weights).iloc[0].tolist()
         chrom = chroms[rev_numchrommap[region[0]]]
         if len(chrom) == 0:
             continue
-        # Update coverage in each iteration
-        cov += (2 * batch * rl / panel_size) if paired else (batch * rl / panel_size)
         if((region[2]-region[1]) < fl):
             startindex = region[1]
         else:
             startindex = random.randint(region[1], region[2]-fl)
-        sub = chrom[startindex:startindex + fl]
+            
+        # Update coverage in each iteration
+        if((region[2]-startindex) < rl):
+            cov += (2 * (region[2]-startindex) / panel_size) if paired else ((region[2]-startindex) / panel_size)
+        else:
+            cov += (2 * rl / panel_size) if paired else (rl / panel_size)
+        
+        # Extrct the read
+        if((region[2]-region[1]) < fl and (region[2]-region[1]) > rl):
+            sub = chrom[startindex:startindex + region[2]-region[1]]
+        elif((region[2]-region[1]) < rl):
+            sub = chrom[startindex:startindex + rl]
+        else:
+            sub = chrom[startindex:startindex + fl]
+        
         if random.random() > 0.5:
             sub = revc(sub, tab)
         random_str = ''.join(random.choices(string.ascii_letters, k=15))
@@ -464,18 +486,33 @@ def targetedSim_sc(cell_id, healthy, target_cov, ls, num_clones, rl, fl, floc, b
         f2.close()
     return(0)
 
-def targetedSim_bulk_parallel(prop_hc, coverage, threads=None, *args):
+def targetedSim_bulk_parallel(prop_hc, coverage, num_clones, alpha=None, clone_prop=None, threads=None, **kwargs):
     if(threads == None):
         print("Using 4 cores as number of cores to use is not specified.")
         threads = 4
     thread_cov = coverage / threads # Scale to match total coverage
+    
+    # Compute tumor clones proportions
+    if clone_prop is None:
+        raw_clone_prop = getDirichletClone(num_clones, alpha)
+    else:
+        raw_clone_prop = clone_prop
+    
+    clone_prop = [clone_p * (1-prop_hc) for clone_p in raw_clone_prop]
+    clone_prop.append(1-sum(clone_prop))
+    
+    # Bring kwargs to args as starmap accepts only positional arguments
+    extra_args = tuple(kwargs.values())
+    
     with mp.Pool(processes=threads) as pool:
         pool.starmap(
             targetedSim_bulk,
-            [(i+1, thread_cov, prop_hc, *args) for i in range(threads)]
+            [(i+1, clone_prop, thread_cov, num_clones, *extra_args) for i in range(threads)]
         )
+    
+    return raw_clone_prop
 
-def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, r=None, p=None, threads=None, *args):
+def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, num_clones, alpha=None, clone_prop=None, r=None, p=None, threads=None, **kwargs):
     # Simulate negative binomial coverage
     if(any(x is None for x in [p, r])):
             print("Negative binomial parameters for single-cell depths are needed in single-cell mode.")
@@ -485,18 +522,29 @@ def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, r=None, p=None,
         print("Using 4 cores as number of cores to use is not specified.")
         threads = 4
     
+    # Compute healthy and tumor cells to simulate
     hc = int(num_single_cells * prop_hc // 1)
     tc = num_single_cells - hc
+    
+    # Compute tumor clones proportions
+    if clone_prop is None:
+        clone_prop = getDirichletClone(num_clones, alpha)
+        
+    # Bring kwargs to args as starmap accepts only positional arguments
+    extra_args = tuple(kwargs.values())
+    
     with mp.Pool(processes=threads) as pool:
         pool.starmap(
             targetedSim_sc,
-            [(i+1, True, cell_cov[i], *args) for i in range(hc)]
+            [(i+1, num_clones, cell_cov[i], *extra_args) for i in range(hc)]
         )
     with mp.Pool(processes=threads) as pool:
         pool.starmap(
             targetedSim_sc,
-            [(i+1+hc, False, cell_cov[i+hc], *args) for i in range(tc)]
+            [(i+1+hc, pickdclone(clone_prop, num_clones), cell_cov[i+hc], *extra_args) for i in range(tc)]
         )
+        
+    return clone_prop
 
 def aggregate_fastqs(fastq_dir, output_left_fastq, output_right_fastq=None, paired=False):
     left_fastqs = sorted(glob.glob(f"{fastq_dir}/*/*left.fq.gz"))

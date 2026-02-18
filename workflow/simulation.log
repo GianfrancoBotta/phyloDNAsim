@@ -4,7 +4,7 @@ Building DAG of jobs...
 Unlocked working directory.
 [INFO] Starting Snakemake run...
 Assuming unrestricted shared filesystem usage.
-host: eu-fn-2t-05
+host: eu-fn-g2-03
 Building DAG of jobs...
 Using shell: /usr/bin/bash
 Provided cores: 50
@@ -19,14 +19,30 @@ total                                     2
 Select jobs to execute...
 Execute 1 jobs...
 
-[Tue Feb  3 13:21:13 2026]
+[Tue Feb 17 22:13:01 2026]
 localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/SCICoNE/results/prepare/references/fasta_files/ucsc_hg19.fa, /cluster/work/bewi/members/gbotta/SCICoNE/results/prepare/references/bed_files/on_target.binned.tuned.bed, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/prepare/signatures/MosaicSim_signatures.txt
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation
+    input: /cluster/work/bewi/members/gbotta/SCICoNE/results/prepare/references/fasta_files/ucsc_hg19.fa, /cluster/work/bewi/members/gbotta/SCICoNE/results/prepare/references/bed_files/on_target.ext.bed, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/prepare/signatures/MosaicSim_signatures.txt
+    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation_new
     log: logs/simulation/phyloDNAsim.log
     jobid: 1
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation
-    threads: 50
-    resources: tmpdir=/scratch/tmp.56030293.gbotta
+    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation_new
+    threads: 40
+    resources: tmpdir=/scratch/tmp.57604125.gbotta
 Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
 Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
+[Wed Feb 18 04:56:30 2026]
+Finished jobid: 1 (Rule: simulate_sc_tumor_data_phyloDNAsim)
+1 of 2 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Wed Feb 18 04:56:30 2026]
+localrule all:
+    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation_new
+    jobid: 0
+    reason: Input files updated by another job: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation_new
+    resources: tmpdir=/scratch/tmp.57604125.gbotta
+[Wed Feb 18 04:56:30 2026]
+Finished jobid: 0 (Rule: all)
+2 of 2 steps (100%) done
+Complete log(s): /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/log/2026-02-17T221249.876097.snakemake.log

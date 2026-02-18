@@ -2,8 +2,12 @@ import numpy as np
 import random
 import re
 
-def create_SNPSig(seqs, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
+def create_SNPSig(seqs, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
     if len(valid_chroms) == 0:
         print("All chromosomes were deleted. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
@@ -31,44 +35,96 @@ def create_SNPSig(seqs, num_signatures, signature_alpha, signature_distributions
         mutated_base = list_of_pairs[middle_two][1].translate(tab) # Reverse strand
         indices = [m.start() for m in re.finditer(altstring, seqs[chrom])]
         pos = random.choice(indices)+1
-    return {'char': mutated_base, 'pos': pos, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'SNV'}
+    return {'char': mutated_base, 'pos': pos, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'SNV'} # Change it
 
-def create_speedSNP(seqs, numchrommap, bases=['A', 'C', 'T', 'G']):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
+def create_speedSNP(seqs, numchrommap, targeted, regions=None, bases=['A', 'C', 'T', 'G']):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
     if len(valid_chroms) == 0:
         print("All chromosomes were deleted. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
-    n = len(seqs[chrom])
-    pos = random.randint(0, n-1)
+    
+    # Sample the location
+    if targeted:
+        chr_regions = regions[regions['chr'] == numchrommap[chrom]]
+        region = chr_regions.sample().iloc[0].tolist()
+        pos = random.randint(region[1], region[2]-1)
+        if pos >= len(seqs[chrom]) or pos < 0:
+            print(f"ERROR: chrom={chrom}, pos={pos}, len={len(seqs[chrom])}")
+            raise ValueError("Position out of range")
+    else:
+        n = len(seqs[chrom])
+        pos = random.randint(0, n-1)
+        
     mut_bases = list(set(bases) - set(list(chr(seqs[chrom][pos]))))
     char = random.choice(mut_bases)
+    
     return {'char': char, 'pos': pos, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'SNV'}
 
-def create_insertionsmall(seqs, numchrommap, bases=['A', 'C', 'T', 'G']):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
+def create_insertionsmall(seqs, numchrommap, targeted, regions=None, bases=['A', 'C', 'T', 'G']):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
     if len(valid_chroms) == 0:
         print("All chromosomes were deleted. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
-    n = len(seqs[chrom])
-    pos = random.randint(0, n-1)
+    
+    # Sample the location
+    if targeted:
+        chr_regions = regions[regions['chr'] == numchrommap[chrom]]
+        region = chr_regions.sample().iloc[0].tolist()
+        pos = random.randint(region[1], region[2]-1)
+        if pos >= len(seqs[chrom]) or pos < 0:
+            print(f"ERROR: chrom={chrom}, pos={pos}, len={len(seqs[chrom])}")
+            raise ValueError("Position out of range")
+    else:
+        n = len(seqs[chrom])
+        pos = random.randint(0, n-1)
+    
     number_of_bases_to_insert = random.randint(1, 15)
     ins_str = ''
     for i in range(number_of_bases_to_insert):
         ins_str = ins_str + random.choice(bases)
+        
     return {'insertion': ins_str, 'pos': pos, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'INSERTIONSMALL'}
 
-def create_deletionsmall(seqs, numchrommap):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
+def create_deletionsmall(seqs, numchrommap, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
     if len(valid_chroms) == 0:
         print("All chromosomes were deleted. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
-    n = len(seqs[chrom])
-    stidx = random.randint(0, n-1)
+    
+    # Sample the location
+    if targeted:
+        chr_regions = regions[regions['chr'] == numchrommap[chrom]]
+        region = chr_regions.sample().iloc[0].tolist()
+        stidx = random.randint(region[1], region[2]-1)
+        if stidx >= len(seqs[chrom]) or stidx < 0:
+            print(f"ERROR: chrom={chrom}, stidx={stidx}, len={len(seqs[chrom])}")
+            raise ValueError("Position out of range")
+    else:
+        n = len(seqs[chrom])
+        stidx = random.randint(0, n-1)
+        
     edidx = stidx + random.randint(1, 15)
+    
     return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'DELSMALL'}
 
-def create_CNV(seqs, numchrommap):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
+def create_CNV(seqs, numchrommap, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
     if len(valid_chroms) == 0:
         print("All chromosomes are too short to introduce CNVs. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
@@ -80,14 +136,31 @@ def create_CNV(seqs, numchrommap):
         if(counter == 10):
             dist = 0.05 * n
         counter += 1
-    stidx = random.randint(0, n-1)
+        
+    # Sample the location
+    if targeted:
+        chr_regions = regions[regions['chr'] == numchrommap[chrom]]
+        region = chr_regions.sample().iloc[0].tolist()
+        stidx = random.randint(region[1]-int(dist/2), region[2]-1)
+        if stidx >= len(seqs[chrom]) or stidx < 0:
+            print(f"ERROR: chrom={chrom}, stidx={stidx}, len={len(seqs[chrom])}")
+            raise ValueError("Position out of range")
+    else:
+        n = len(seqs[chrom])
+        stidx = random.randint(0, n-1)
+        
     edidx = min(stidx + int(dist), n-1)
     max_reps = 5
     rep_num = random.randint(2, max_reps)
+    
     return {'start': stidx, 'end': edidx, 'rep_num': rep_num, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'CNV'}
 
-def create_aneuploidy(seqs, numchrommap):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
+def create_aneuploidy(seqs, numchrommap, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
     if len(valid_chroms) == 0:
         print("All chromosomes were deleted. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
@@ -96,10 +169,15 @@ def create_aneuploidy(seqs, numchrommap):
         rep_num = 0
     else: # Insertion with probability 0.8
         rep_num = random.randint(2, max_reps)
+        
     return {'rep_num': rep_num, 'chrom_length': len(seqs[chrom]), 'chrom_num': chrom, 'chrom_name': numchrommap[chrom],  'event': 'ANEUPLOIDY'}
 
-def create_deletion(seqs, numchrommap):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
+def create_deletion(seqs, numchrommap, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
     if len(valid_chroms) == 0:
         print("All chromosomes are too short to introduce deletions. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
@@ -111,12 +189,29 @@ def create_deletion(seqs, numchrommap):
         if(counter == 10):
             dist = 0.05 * n
         counter += 1
-    stidx = random.randint(0, n-1)
+        
+    # Sample the location
+    if targeted:
+        chr_regions = regions[regions['chr'] == numchrommap[chrom]]
+        region = chr_regions.sample().iloc[0].tolist()
+        stidx = random.randint(region[1], region[2]-1)
+        if stidx >= len(seqs[chrom]) or stidx < 0:
+            print(f"ERROR: chrom={chrom}, stidx={stidx}, len={len(seqs[chrom])}")
+            raise ValueError("Position out of range")
+    else:
+        n = len(seqs[chrom])
+        stidx = random.randint(0, n-1)
+
     edidx = min(stidx + int(dist), n-1)
+    
     return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'DEL'}
 
-def create_inversion(seqs, numchrommap):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
+def create_inversion(seqs, numchrommap, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
     if len(valid_chroms) == 0:
         print("All chromosomes are too short to introduce inversions. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
@@ -128,15 +223,32 @@ def create_inversion(seqs, numchrommap):
         if(counter == 10):
             dist = 0.05 * n
         counter += 1
-    stidx = random.randint(0, n-1)
+        
+    # Sample the location
+    if targeted:
+        chr_regions = regions[regions['chr'] == numchrommap[chrom]]
+        region = chr_regions.sample().iloc[0].tolist()
+        stidx = random.randint(region[1], region[2]-1)
+        if stidx >= len(seqs[chrom]) or stidx < 0:
+            print(f"ERROR: chrom={chrom}, stidx={stidx}, len={len(seqs[chrom])}")
+            raise ValueError("Position out of range")
+    else:
+        n = len(seqs[chrom])
+        stidx = random.randint(0, n-1)
+
     edidx = min(stidx + int(dist), n-1)
+    
     return {'start': stidx, 'end': edidx, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'INVERSION'}
 
-def create_kataegis(seqs, numchrommap):
+def create_kataegis(seqs, numchrommap, targeted, regions=None):
     '''
     Simulate regions of the genomes that are hypermutated.
     '''
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
     if len(valid_chroms) == 0:
         print("All chromosomes are too short to introduce kataegis. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
@@ -148,7 +260,19 @@ def create_kataegis(seqs, numchrommap):
         if(counter == 10):
             dist = 0.05 * n
         counter += 1
-    stidx = random.randint(0, n-1)
+        
+    # Sample the location
+    if targeted:
+        chr_regions = regions[regions['chr'] == numchrommap[chrom]]
+        region = chr_regions.sample().iloc[0].tolist()
+        stidx = random.randint(region[1], region[2]-1)
+        if stidx >= len(seqs[chrom]) or stidx < 0:
+            print(f"ERROR: chrom={chrom}, stidx={stidx}, len={len(seqs[chrom])}")
+            raise ValueError("Position out of range")
+    else:
+        n = len(seqs[chrom])
+        stidx = random.randint(0, n-1)
+        
     edidx = min(stidx + int(dist), n-1)
     idx = stidx
     res = []
@@ -163,81 +287,115 @@ def create_kataegis(seqs, numchrommap):
                 mut = 'G'
             res.append({'chrom_num': chrom, 'pos': idx, 'char': mut})
         idx = idx + 1
+        
     return {'start': stidx, 'end': edidx, 'mut': res, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'KATAEGIS'}
 
-def create_translocation(seqs, numchrommap):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
-    if len(valid_chroms) > 2:
+def create_translocation(seqs, numchrommap, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
+    if len(valid_chroms) < 2:
         print("Less than 2 chromosomes left. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.sample(valid_chroms, 2)
+    
+    # Sample the locations
     l1 = len(seqs[chrom[0]])
     l2 = len(seqs[chrom[1]])
     bkpt1 = random.randint(0, l1-1)
     bkpt2 = random.randint(0, l2-1)
-    rng_recip = random.random()
-    if(rng_recip < 0.95):
-        res = {'chrom_num1': chrom[0],
-               'chrom_name1': numchrommap[chrom[0]],
-               'chrom_length1': l1,
-               'chrom_num2': chrom[1],
-               'chrom_name2': numchrommap[chrom[1]],
-               'chrom_length2': l2,
-               'bkpt1': bkpt1,
-               'bkpt2': bkpt2,
-               'normal': True,
-               'event': 'TRANSLOCATION'}
-    else:
-        res = {'chrom_num1': chrom[0],
-               'chrom_name1': numchrommap[chrom[0]],
-               'chrom_length1': l1,
-               'chrom_num2': chrom[1],
-               'chrom_name2': numchrommap[chrom[1]],
-               'chrom_length2': l2,
-               'bkpt1': bkpt1,
-               'bkpt2': bkpt2,
-               'normal': False,
-               'event': 'TRANSLOCATION'}
+        
+    # rng_recip = random.random()
+    # if(rng_recip < 0.95):
+    #     res = {'chrom_num1': chrom[0],
+    #            'chrom_name1': numchrommap[chrom[0]],
+    #            'chrom_length1': l1,
+    #            'chrom_num2': chrom[1],
+    #            'chrom_name2': numchrommap[chrom[1]],
+    #            'chrom_length2': l2,
+    #            'bkpt1': bkpt1,
+    #            'bkpt2': bkpt2,
+    #            'normal': True,
+    #            'event': 'TRANSLOCATION'}
+    # else:
+    #     res = {'chrom_num1': chrom[0],
+    #            'chrom_name1': numchrommap[chrom[0]],
+    #            'chrom_length1': l1,
+    #            'chrom_num2': chrom[1],
+    #            'chrom_name2': numchrommap[chrom[1]],
+    #            'chrom_length2': l2,
+    #            'bkpt1': bkpt1,
+    #            'bkpt2': bkpt2,
+    #            'normal': False,
+    #            'event': 'TRANSLOCATION'}
+    
+    res = {'chrom_num1': chrom[0],
+            'chrom_name1': numchrommap[chrom[0]],
+            'chrom_length1': l1,
+            'chrom_num2': chrom[1],
+            'chrom_name2': numchrommap[chrom[1]],
+            'chrom_length2': l2,
+            'bkpt1': bkpt1,
+            'bkpt2': bkpt2,
+            'normal': True,
+            'event': 'TRANSLOCATION'}
+    
     return res
 
-def create_chromothripsis(seqs, numchrommap):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1e6]
+def create_chromothripsis(seqs, numchrommap, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 1000]
     if len(valid_chroms) == 0:
         print("All chromosomes are too short to introduce chromothripsis. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
     n = len(seqs[chrom])
     splits = random.randint(10, 100)
     dist = 0
-    while(dist < 100 * splits):
+    while(dist < splits):
         dist = n
         counter = 1
         while(dist > 0.1*n):
             dist = getSVSize(chromosome_size=n)
             if(counter == 10):
-                dist = 0.05 * n
+                dist = 0.05 * n if 0.05 * n > splits else 5 * splits
             counter += 1
+        # Sample the locations
         stidx = random.randint(0, n-1)
         edidx = min(stidx + int(dist), n-1)
         dist = edidx - stidx
+        
     breakpoints = list(numpy_choices(int(dist), splits)) # Returns locations of breakpoints
     breakpoints.append(int(dist)-1)
     rearrange = np.random.permutation(splits).tolist()
     inversion = [0 if random.random() < 0.5 else 1 for _ in range(len(breakpoints)+1)]
+    
     return {'start': stidx, 'end': edidx, 'bkpts': breakpoints, 'order': rearrange, 'reverse': inversion, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'CHROMOTHRIP'}
 
-def create_BFB(seqs, numchrommap):
-    valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
+def create_BFB(seqs, numchrommap, targeted, regions=None):
+    # Sample the chromosome
+    if targeted:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0 and numchrommap[i] in regions['chr'].values]
+    else:
+        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
     if len(valid_chroms) == 0:
         print("All chromosomes were deleted. Consider decreasing the aneuploidy/deletion rates.")
     chrom = random.choice(valid_chroms)
     n_bkpts = random.randint(2, 4)
+    
     bkpts = [None] * n_bkpts
     for i in range(n_bkpts):
+        # Sample the locations
         bkpoint = random.randint(1, len(seqs[chrom])-2)
         bkpts[i] = bkpoint
     bkpts.sort()
+    
     return {'bkpts': bkpts, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'BFB'}
 
-# def create_chromoplexy(seqs, numchrommap):
+# def create_chromoplexy(seqs, numchrommap, targeted, regions=None):
 #     n_chroms = random.randint(2, 6)
 #     c = list(range(len(seqs)))
 #     chrom = random.sample(c, n_chroms)

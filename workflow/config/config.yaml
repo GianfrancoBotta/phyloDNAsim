@@ -5,4 +5,4 @@ chr_regions: ["on_target", "off_target"]
 
 signatures_url: "https://raw.githubusercontent.com/CMUSchwartzLab/MosaicSim/refs/heads/main/data/signatures.txt"
 
-simulate_threads: 50
+simulate_threads: 40
