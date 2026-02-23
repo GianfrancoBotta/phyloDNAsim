@@ -1,6 +1,5 @@
 import os
 
-SOURCEDIR = "/cluster/work/bewi/members/gbotta/SCICoNE"
 WORKDIR = "/cluster/work/bewi/members/gbotta/phyloDNAsim"
 configfile: os.path.join(WORKDIR, "workflow/config/config.yaml")
 
@@ -20,11 +19,11 @@ rule download_MosaicSim_signatures:
 
 rule simulate_sc_tumor_data_phyloDNAsim:
     input:
-        genome=os.path.join(SOURCEDIR, "results/prepare/references/fasta_files/ucsc_hg19.fa"),
-        bed=os.path.join(SOURCEDIR, "results/prepare/references/bed_files/on_target.ext.bed"),
+        genome=os.path.join(WORKDIR, "data/genome.fa"),
+        bed=os.path.join(WORKDIR, "data/panel.bed"),
         signatures=os.path.join(WORKDIR, "results/prepare/signatures/MosaicSim_signatures.txt")
     output:
-        outdir=directory(os.path.join(WORKDIR, "results/simulation_new"))
+        outdir=directory(os.path.join(WORKDIR, "results/simulation"))
     threads: config["simulate_threads"]
     params:
         yaml_config=os.path.join(WORKDIR, "workflow/config/simulate.yaml"),

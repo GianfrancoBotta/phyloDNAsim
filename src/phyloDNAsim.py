@@ -77,7 +77,7 @@ mut_events = params['mutational_events']
 list_of_rates = {
     "SNV": params['high_rates_list'],
     "CNV": params['high_rates_list'],
-    "DEL": params['low_rates_list'],
+    "DEL": params['medium_rates_list'],
     "DELSMALL": params['medium_rates_list'],
     "INVERSION": params['low_rates_list'],
     "TRANSLOCATION": params['low_rates_list'],

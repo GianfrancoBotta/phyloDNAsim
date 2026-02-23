@@ -162,134 +162,61 @@ def adapt_CNV(regions_df, info):
 def adapt_aneuploidy(regions_df, info):
     existence = info['chrom_name'] in regions_df['chr'].values
     if existence:
-        # Rows to duplicate
-        block = regions_df[regions_df["chr"] == info['chrom_name']]
-        block_dups = []
-        for i in range(1, info['rep_num']):
-            b = block.copy()
-            b[["start", "end"]] += i * info['chrom_length']
-            block_dups.append(b)
-        
-        # Insert duplicated rows into the dataframe
-        mask = regions_df["chr"] == info['chrom_name']
-        last_idx = regions_df.index[mask].max()
-        regions_df = pd.concat(
-            [
-                regions_df.loc[:last_idx],
-                *block_dups,
-                regions_df.loc[last_idx + 1:],
-            ],
-            ignore_index=True,
-        )
+        if info['rep_num'] > 0:
+            # Rows to duplicate
+            block = regions_df[regions_df["chr"] == info['chrom_name']]
+            block_dups = []
+            for i in range(1, info['rep_num']):
+                b = block.copy()
+                b[["start", "end"]] += i * info['chrom_length']
+                block_dups.append(b)
+            
+            # Insert duplicated rows into the dataframe
+            mask = regions_df["chr"] == info['chrom_name']
+            last_idx = regions_df.index[mask].max()
+            regions_df = pd.concat(
+                [
+                    regions_df.loc[:last_idx],
+                    *block_dups,
+                    regions_df.loc[last_idx + 1:],
+                ],
+                ignore_index=True,
+            )
+        else:
+            # Rows to delete
+            regions_df = regions_df[regions_df["chr"] != info['chrom_name']].reset_index(drop=True)
     
     return(regions_df)
+
 
 def adapt_translocation(regions_df, info):
-    existence1 = info['chrom_name1'] in regions_df['chr'].values
-    if existence1:
-        # Adapt dataframes at breakpoints
-        idx1, both1 = find_idx(regions_df, info['chrom_name1'], info['bkpt1'])
-        if(idx1 is not None):
-            # Split a region if the translocation happens in its middle
-            if(both1):
-                idx1 = idx1 - 1
-            else:
-                row = regions_df.loc[idx1].copy()
-                line1 = row.copy()
-                line1['end'] = info['bkpt1']
-                line2 = row.copy()
-                line2['start'] = info['bkpt1']
-    
-                # Drop the old row and insert the new ones
-                regions_df = pd.concat([
-                    regions_df.loc[:idx1-1],
-                    pd.DataFrame([line1, line2]),
-                    regions_df.loc[idx1+1:]
-                ]).reset_index(drop=True)
-            mask1 = regions_df["chr"] == info['chrom_name1']
-            last_idx1 = regions_df.index[mask1].max()
-            # Take the df slice
-            slice1 = regions_df.loc[idx1:last_idx1].copy()
-            slice1['chr'] = info['chrom_name2']
-            slice1[['start', 'end']] += info['bkpt2'] - info['bkpt1']
-        else:
-            mask1 = regions_df["chr"] == info['chrom_name1']
-            idx1 = regions_df.index[mask1].max() + 1
-            slice1 = pd.DataFrame(columns=regions_df.columns)
+    # Extract chromosome dataframes
+    chr1_df = regions_df[regions_df['chr'] == info['chrom_name1']].copy()
+    chr2_df = regions_df[regions_df['chr'] == info['chrom_name2']].copy()
 
-    else: # if chrom_name1 is not in the panel
-        idx1 = find_previous_idx(info['chrom_name1'], regions_df)
-        slice1 = pd.DataFrame(columns=regions_df.columns)
-        
-    
-    existence2 = info['chrom_name2'] in regions_df['chr'].values
-    if existence2:
-        # Adapt dataframes at breakpoints
-        idx2, both2 = find_idx(regions_df, info['chrom_name2'], info['bkpt2'])
-        if(idx2 is not None):
-            if(both2):
-                idx2 = idx2 - 1
-            else:
-                row = regions_df.loc[idx2].copy()
-                line1 = row.copy()
-                line1['end'] = info['bkpt2']
-                line2 = row.copy()
-                line2['start'] = info['bkpt2']
-    
-                # Drop the old row and insert the new ones
-                regions_df = pd.concat([
-                    regions_df.loc[:idx2-1],
-                    pd.DataFrame([line1, line2]),
-                    regions_df.loc[idx2+1:]
-                ]).reset_index(drop=True)
-            mask2 = regions_df["chr"] == info['chrom_name2']
-            last_idx2 = regions_df.index[mask2].max()
-            # Take the df slice
-            slice2 = regions_df.loc[idx2:last_idx2].copy()
-            slice2['chr'] = info['chrom_name1']
-            slice2[['start', 'end']] +=  info['bkpt1'] - info['bkpt2']
-        else:
-            mask2 = regions_df["chr"] == info['chrom_name2']
-            idx2 = regions_df.index[mask2].max() + 1
-            slice2 = pd.DataFrame(columns=regions_df.columns)
-            
-    else: # if chrom_name2 is not in the panel
-        idx2 = find_previous_idx(info['chrom_name2'], regions_df)
-        slice2 = pd.DataFrame(columns=regions_df.columns)
-        
-    # Normal translocation
-    if(info['normal']):
-        # Compose the new dataframe
-        min_idx = min(idx1, idx2)
-        max_idx = max(idx1, idx2)
-        regions_df = pd.concat(
-            [
-                regions_df.loc[:min_idx],
-                slice2,
-                regions_df.loc[min_idx+slice1.shape[0]+1:max_idx],
-                slice1,
-                regions_df.loc[max_idx+slice2.shape[0]+1:],
-            ],
-            ignore_index=True
-        )
-    
-    # Anormal translocation
+    # Offsets
+    offset1 = info['bkpt2'] - info['bkpt1']
+    offset2 = info['bkpt1'] - info['bkpt2']
+
+    # Split and shift chromosomes
+    slice1 = split_chromosome(chr1_df, info['bkpt1'], info['chrom_name2'], offset1)
+    slice2 = split_chromosome(chr2_df, info['bkpt2'], info['chrom_name1'], offset2)
+
+    # Remove original chromosomes from regions_df
+    regions_df = regions_df[~regions_df['chr'].isin([info['chrom_name1'], info['chrom_name2']])].copy()
+
+    # Concatenate back
+    if info['normal']:
+        # normal translocation: slice2 before slice1
+        regions_df = pd.concat([regions_df, slice2, slice1], ignore_index=True)
     else:
-        # Compose the new dataframe
-        min_idx = min(idx1, idx2)
-        max_idx = max(idx1, idx2)
-        regions_df = pd.concat(
-            [
-                regions_df.loc[:min_idx],
-                regions_df.loc[min_idx+slice1.shape[0]+1:max_idx],
-                slice1,
-                slice2, # You should change also the offset for the start and end
-                regions_df.loc[max_idx+slice2.shape[0]+1:],
-            ],
-            ignore_index=True
-        )
-        
-    return(regions_df)
+        # abnormal translocation: slice1 then slice2
+        regions_df = pd.concat([regions_df, slice1, slice2], ignore_index=True)
+
+    # Sort by chromosome and start to maintain order
+    regions_df = regions_df.sort_values(['chr','start', 'end']).reset_index(drop=True)
+    
+    return regions_df
 
 def adapt_chromothripsis(regions_df, info):
     existence = info['chrom_name'] in regions_df['chr'].values
@@ -305,9 +232,9 @@ def adapt_chromothripsis(regions_df, info):
                 else:
                     row = regions_df.iloc[current_idx-1].copy()
                     line1 = row.copy()
-                    line1['end'] = bkpt
+                    line1['end'] = info['start'] + bkpt
                     line2 = row.copy()
-                    line2['start'] = bkpt
+                    line2['start'] = info['start'] + bkpt
 
                     # Drop the old row and insert the new ones
                     regions_df = pd.concat([
@@ -382,24 +309,30 @@ def adapt_BFB(regions_df, info):
         
     return(regions_df)
 
-def find_idx(regions_df, chr, loc):
-    mask = (
-        (regions_df['chr'] == chr) &
-        (regions_df['start'] >= loc)
-    )
-    
-    if(sum(mask)):
-        idx = regions_df.index[mask][0]
-        both = True
-        
-        if(idx != 0 and regions_df.iloc[idx-1, :]['end'] >= loc and regions_df.iloc[idx-1, :]['chr'] == chr):
-            idx = idx - 1
-            both = False
-    else:
-        idx = None
-        both = False
-    
-    return(idx, both)
+
+def find_idx(regions_df, chr_name, loc):
+    chr_df = regions_df[regions_df['chr'] == chr_name]
+
+    if chr_df.empty:
+        return None, False
+
+    # Case 1 — inside a region
+    inside = chr_df[
+        (chr_df['start'] <= loc) &
+        (chr_df['end'] > loc)
+    ]
+
+    if not inside.empty:
+        return inside.index[0], False  # False = inside region
+
+    # Case 2 — between regions
+    after = chr_df[chr_df['start'] > loc]
+
+    if not after.empty:
+        return after.index[0], True  # True = between regions
+
+    # Case 3 — after last region
+    return None, False
 
 def find_previous_idx(chr_name, 
                       regions_df, 
@@ -425,3 +358,49 @@ def find_previous_idx(chr_name,
         idx = regions_df.index[mask].max() + 1
          
     return idx
+
+# Split and shift function for a single chromosome
+def split_chromosome(chrom_regions, bkpt, new_chr, offset):
+    if chrom_regions.empty:
+        return pd.DataFrame(columns=chrom_regions.columns)
+
+    # Case 1: breakpoint inside a region
+    inside_mask = (chrom_regions['start'] <= bkpt) & (chrom_regions['end'] > bkpt)
+    if inside_mask.any():
+        split_idx = chrom_regions.index[inside_mask][0]
+
+        row = chrom_regions.loc[split_idx].copy()
+
+        # Split the row
+        top = row.copy()
+        top['end'] = bkpt
+        bottom = row.copy()
+        bottom['start'] = bkpt
+
+        # Regions staying in original chromosome
+        before = chrom_regions.loc[:split_idx-1]
+        top_df = pd.DataFrame([top])
+
+        # Regions to move
+        after = pd.concat([pd.DataFrame([bottom]), chrom_regions.loc[split_idx+1:]], ignore_index=True)
+    
+    else:
+        # Case 2 & 3: breakpoint before first region or between regions
+        after_mask = chrom_regions['start'] > bkpt
+        if after_mask.any():
+            split_idx = chrom_regions.index[after_mask][0]
+            before = chrom_regions.loc[:split_idx-1] if split_idx > 0 else pd.DataFrame(columns=chrom_regions.columns)
+            after = chrom_regions.loc[split_idx:].copy()
+            top_df = pd.DataFrame(columns=chrom_regions.columns)  # nothing stays in original
+        else:
+            # Breakpoint after last region → nothing moves
+            return chrom_regions.copy()
+
+    # Apply offset and new chromosome only to the moved part
+    after[['start','end']] += offset
+    after['chr'] = new_chr
+
+    # Combine regions that stay + moved regions
+    new_df = pd.concat([before, top_df, after], ignore_index=True)
+    
+    return new_df

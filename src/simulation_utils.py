@@ -162,10 +162,25 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, muta
         'KATAEGIS': apply_kataegis,
         'ANEUPLOIDY': apply_aneuploidy
     }
+    adapt_functions = {
+        'CNV': adapt_CNV,
+        'DEL': adapt_deletion,
+        'DELSMALL': adapt_deletion,
+        'TRANSLOCATION': adapt_translocation,
+        'BFB': adapt_BFB,
+        'CHROMOTHRIP':  adapt_chromothripsis,
+        # 'CHROMOPLEX': adapt_chromoplexy,
+        'INSERTIONSMALL': adapt_insertion,
+        'ANEUPLOIDY': adapt_aneuploidy
+    }
+    
     infos = {}
     infos[tot_nodes - 1] = []
+    
+    
     for path in list_of_paths:
         mutated_genome = copy.deepcopy(current_genome) # Create a copy not to modify directly the genome
+        mutated_regions = copy.deepcopy(regions)
         for i in range(len(path)-1):
             if(path[i+1] != (tot_nodes-1)):
                 c_infos = infos[path[i]].copy()
@@ -174,14 +189,17 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, muta
                 for m_type in current_muts.keys():
                     for _ in current_muts[m_type]:
                         if(m_type == "SNV" and use_signatures):
-                            info = save_functions[m_type](mutated_genome, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab, targeted, regions)
+                            info = save_functions[m_type](mutated_genome, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab, targeted, mutated_regions)
                         else:
-                            info = save_functions[m_type](mutated_genome, numchrommap, targeted, regions)
+                            info = save_functions[m_type](mutated_genome, numchrommap, targeted, mutated_regions)
                         if info is None:
                             print("Invalid information to apply mutations.")
                         c_infos.append(info)
                         # Adjust mutations info for the mutated genomes (shift indices if there are two or more events on the same chromosome)
                         mutated_genome = apply_functions[m_type](mutated_genome, info)
+                        if m_type in ['SNV', 'INVERSION', 'KATAEGIS']:
+                            continue
+                        mutated_regions = adapt_functions[m_type](mutated_regions, info)
                 infos[path[i+1]] = c_infos
     return infos
 
@@ -374,11 +392,10 @@ def targetedSim_bulk(thread_id, clone_prop, target_cov, num_clones, ls, rl, fl, 
         f2 = io.BufferedWriter(gzip.open(os.path.join(thread_dir, 'threadright.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
     else:
         fl = rl
-        
-    # Initialize coverage
-    cov = 0.0
     
     for clone in range(num_clones+1):
+        # Initialize coverage
+        cov = 0.0
         clone_target_cov = target_cov * clone_prop[clone]
         chroms = applyMutations(ls, infos, clone)
         mod_regions = adapt_targeted_regions(regions, infos, clone)
