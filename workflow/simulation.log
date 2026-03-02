@@ -4,7 +4,7 @@ Building DAG of jobs...
 Unlocked working directory.
 [INFO] Starting Snakemake run...
 Assuming unrestricted shared filesystem usage.
-host: eu-fn-4t-01
+host: eu-fn-g2-02
 Building DAG of jobs...
 Using shell: /usr/bin/bash
 Provided cores: 50
@@ -19,7 +19,7 @@ total                                     2
 Select jobs to execute...
 Execute 1 jobs...
 
-[Sun Feb 22 15:22:23 2026]
+[Tue Feb 24 17:58:44 2026]
 localrule simulate_sc_tumor_data_phyloDNAsim:
     input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/prepare/signatures/MosaicSim_signatures.txt
     output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation
@@ -27,22 +27,22 @@ localrule simulate_sc_tumor_data_phyloDNAsim:
     jobid: 1
     reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation
     threads: 40
-    resources: tmpdir=/scratch/tmp.58128151.gbotta
+    resources: tmpdir=/scratch/tmp.58376586.gbotta
 Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
 Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-[Mon Feb 23 00:22:45 2026]
+[Wed Feb 25 04:35:33 2026]
 Finished jobid: 1 (Rule: simulate_sc_tumor_data_phyloDNAsim)
 1 of 2 steps (50%) done
 Select jobs to execute...
 Execute 1 jobs...
 
-[Mon Feb 23 00:22:45 2026]
+[Wed Feb 25 04:35:33 2026]
 localrule all:
     input: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation
     jobid: 0
     reason: Input files updated by another job: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation
-    resources: tmpdir=/scratch/tmp.58128151.gbotta
-[Mon Feb 23 00:22:45 2026]
+    resources: tmpdir=/scratch/tmp.58376586.gbotta
+[Wed Feb 25 04:35:33 2026]
 Finished jobid: 0 (Rule: all)
 2 of 2 steps (100%) done
-Complete log(s): /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/log/2026-02-22T152215.672064.snakemake.log
+Complete log(s): /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/log/2026-02-24T175834.810434.snakemake.log

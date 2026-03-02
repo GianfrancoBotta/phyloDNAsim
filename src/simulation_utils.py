@@ -420,7 +420,7 @@ def targetedSim_bulk(thread_id, clone_prop, target_cov, num_clones, ls, rl, fl, 
             else:
                 cov += (2 * rl / panel_size) if paired else (rl / panel_size)
         
-            # Extrct the read
+            # Extract the read
             if((region[2]-region[1]) < fl and (region[2]-region[1]) > rl):
                 sub = chrom[startindex:startindex + region[2]-region[1]]
             elif((region[2]-region[1]) < rl):
