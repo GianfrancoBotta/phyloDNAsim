@@ -2,41 +2,6 @@ import numpy as np
 import random
 import re
 
-def create_SNPSig(seqs, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab, targeted, regions=None):
-    # Sample the chromosome
-    if targeted:
-        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0 and numchrommap[i] in regions['chr'].values]
-    else:
-        valid_chroms = [i for i, s in enumerate(seqs) if len(s) > 0]
-    if len(valid_chroms) == 0:
-        print("All chromosomes were deleted. Consider decreasing the aneuploidy/deletion rates.")
-    chrom = random.choice(valid_chroms)
-    signature_drawn_dist = getDirichletCloneFromDistn(
-        num_signatures-1, signature_alpha, signature_distributions)
-    signature_drawn = pickdclone(
-        signature_drawn_dist, len(signature_drawn_dist))
-    distribution_over_mutations = list(signatures_matrix[:, signature_drawn])
-    position = pickdclone(distribution_over_mutations,
-                          len(distribution_over_mutations))
-    pos = 0
-    first_letter = int(position/24)
-    last_letter = position % 24 % 4  # if == 0 > A if 1 > C if 2 > G if 3 >T
-    middle_two = int((position % 24)/4)
-    if random.random() < 0.5:
-        fullstring = list_of_bases[first_letter] + \
-            list_of_pairs[middle_two][0] + list_of_bases[last_letter]
-        mutated_base = list_of_pairs[middle_two][1]
-        indices = [m.start() for m in re.finditer(fullstring, seqs[chrom])]
-        pos = random.choice(indices)+1 # Change the base in the middle, not the one detected
-    else:
-        altstring = list_of_bases[first_letter] + \
-            list_of_pairs[middle_two][0].translate(
-                tab) + list_of_bases[last_letter]
-        mutated_base = list_of_pairs[middle_two][1].translate(tab) # Reverse strand
-        indices = [m.start() for m in re.finditer(altstring, seqs[chrom])]
-        pos = random.choice(indices)+1
-    return {'char': mutated_base, 'pos': pos, 'chrom_num': chrom, 'chrom_name': numchrommap[chrom], 'event': 'SNV'} # Change it
-
 def create_speedSNP(seqs, numchrommap, targeted, regions=None, bases=['A', 'C', 'T', 'G']):
     # Sample the chromosome
     if targeted:

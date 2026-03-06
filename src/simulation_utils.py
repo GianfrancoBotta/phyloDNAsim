@@ -133,9 +133,9 @@ def generateOrder(tree, time_matrix, list_of_rates):
         mutationedge_list.append(ordered_muts)
     return mutationedge_list, fin_rate_list
 
-def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, mutationedge_list, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab, targeted, regions):
+def saveMutations(current_genome, tot_nodes, list_of_paths, mutationedge_list, numchrommap, targeted, regions):
     save_functions = {
-        'SNV': (create_SNPSig) if use_signatures else (create_speedSNP),
+        'SNV': create_speedSNP,
         'CNV': create_CNV,
         'DEL': create_deletion,
         'DELSMALL': create_deletionsmall,
@@ -188,10 +188,7 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, use_signatures, muta
                 
                 for m_type in current_muts.keys():
                     for _ in current_muts[m_type]:
-                        if(m_type == "SNV" and use_signatures):
-                            info = save_functions[m_type](mutated_genome, num_signatures, signature_alpha, signature_distributions, signatures_matrix, numchrommap, list_of_bases, list_of_pairs, tab, targeted, mutated_regions)
-                        else:
-                            info = save_functions[m_type](mutated_genome, numchrommap, targeted, mutated_regions)
+                        info = save_functions[m_type](mutated_genome, numchrommap, targeted, mutated_regions)
                         if info is None:
                             print("Invalid information to apply mutations.")
                         c_infos.append(info)
@@ -503,18 +500,13 @@ def targetedSim_sc(cell_id, clone, target_cov, ls, rl, fl, floc, regions, rev_nu
         f2.close()
     return(0)
 
-def targetedSim_bulk_parallel(prop_hc, coverage, num_clones, alpha=None, clone_prop=None, threads=None, **kwargs):
+def targetedSim_bulk_parallel(prop_hc, coverage, num_clones, raw_clone_prop, threads=None, **kwargs):
     if(threads == None):
         print("Using 4 cores as number of cores to use is not specified.")
         threads = 4
     thread_cov = coverage / threads # Scale to match total coverage
     
-    # Compute tumor clones proportions
-    if clone_prop is None:
-        raw_clone_prop = getDirichletClone(num_clones, alpha)
-    else:
-        raw_clone_prop = clone_prop
-    
+    # Compute tumor clones proportions    
     clone_prop = [clone_p * (1-prop_hc) for clone_p in raw_clone_prop]
     clone_prop.append(1-sum(clone_prop))
     
@@ -526,10 +518,8 @@ def targetedSim_bulk_parallel(prop_hc, coverage, num_clones, alpha=None, clone_p
             targetedSim_bulk,
             [(i+1, clone_prop, thread_cov, num_clones, *extra_args) for i in range(threads)]
         )
-    
-    return raw_clone_prop
-
-def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, num_clones, alpha=None, clone_prop=None, r=None, p=None, threads=None, **kwargs):
+        
+def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, num_clones, clone_prop, r, p, threads=None, **kwargs):
     # Simulate negative binomial coverage
     if(any(x is None for x in [p, r])):
             print("Negative binomial parameters for single-cell depths are needed in single-cell mode.")
@@ -542,10 +532,6 @@ def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, num_clones, alp
     # Compute healthy and tumor cells to simulate
     hc = int(num_single_cells * prop_hc // 1)
     tc = num_single_cells - hc
-    
-    # Compute tumor clones proportions
-    if clone_prop is None:
-        clone_prop = getDirichletClone(num_clones, alpha)
         
     # Bring kwargs to args as starmap accepts only positional arguments
     extra_args = tuple(kwargs.values())
@@ -560,8 +546,6 @@ def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, num_clones, alp
             targetedSim_sc,
             [(i+1+hc, pickdclone(clone_prop, num_clones), cell_cov[i+hc], *extra_args) for i in range(tc)]
         )
-        
-    return clone_prop
 
 def aggregate_fastqs(fastq_dir, output_left_fastq, output_right_fastq=None, paired=False):
     left_fastqs = sorted(glob.glob(f"{fastq_dir}/*/*left.fq.gz"))

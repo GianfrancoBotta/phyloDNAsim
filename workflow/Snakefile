@@ -12,4 +12,7 @@ include: "rules/simulation.smk"
 
 rule all:
     input:
-        os.path.join(WORKDIR, "results/simulation")
+        expand(
+            os.path.join(WORKDIR, "results/simulation/clone_{n_clones}"),
+            n_clones=config["clone_list"]
+        )
