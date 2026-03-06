@@ -20,7 +20,7 @@ Select jobs to execute...
 Failed to solve scheduling problem with ILP solver, falling back to greedy scheduler. You likely have to fix your ILP solver installation. Error message: PULP_CBC_CMD: Not Available (check permissions on cbc)
 Execute 10 jobs...
 
-[Fri Mar  6 18:28:04 2026]
+[Fri Mar  6 18:55:08 2026]
 localrule simulate_sc_tumor_data_phyloDNAsim:
     input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
     output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_12
@@ -29,114 +29,4 @@ localrule simulate_sc_tumor_data_phyloDNAsim:
     reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_12
     wildcards: n_clones=12
     threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:05 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_16
-    log: logs/simulation/clone_16/phyloDNAsim.log
-    jobid: 8
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_16
-    wildcards: n_clones=16
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:05 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_20
-    log: logs/simulation/clone_20/phyloDNAsim.log
-    jobid: 10
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_20
-    wildcards: n_clones=20
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:05 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_2
-    log: logs/simulation/clone_2/phyloDNAsim.log
-    jobid: 1
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_2
-    wildcards: n_clones=2
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:06 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_6
-    log: logs/simulation/clone_6/phyloDNAsim.log
-    jobid: 3
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_6
-    wildcards: n_clones=6
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:06 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_10
-    log: logs/simulation/clone_10/phyloDNAsim.log
-    jobid: 5
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_10
-    wildcards: n_clones=10
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:06 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_14
-    log: logs/simulation/clone_14/phyloDNAsim.log
-    jobid: 7
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_14
-    wildcards: n_clones=14
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:06 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_18
-    log: logs/simulation/clone_18/phyloDNAsim.log
-    jobid: 9
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_18
-    wildcards: n_clones=18
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:06 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_4
-    log: logs/simulation/clone_4/phyloDNAsim.log
-    jobid: 2
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_4
-    wildcards: n_clones=4
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-[Fri Mar  6 18:28:06 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_8
-    log: logs/simulation/clone_8/phyloDNAsim.log
-    jobid: 4
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_8
-    wildcards: n_clones=8
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59353263.gbotta
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
+    resources: tmpdir=/scratch/tmp.59356305.gbotta

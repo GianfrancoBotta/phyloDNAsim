@@ -117,6 +117,12 @@ def _split_and_shift(chrom_regions, bkpt, new_chr, offset):
     return _safe_concat(parts)
 
 
+def _sanitize(regions_df):
+    # Remove regions that have been fully consumed
+    regions_df = regions_df[regions_df['end'] > regions_df['start']].reset_index(drop=True)
+    return regions_df
+
+
 def find_previous_idx(
     chr_name,
     regions_df,
@@ -271,7 +277,7 @@ def adapt_deletion(regions_df, info):
             drop_slice = regions_df.index[idx_start + 1 : idx_end]
             regions_df = regions_df.drop(index=drop_slice).reset_index(drop=True)
 
-    return regions_df
+    return  _sanitize(regions_df)
 
 
 # ---------------------------------------------------------------------------
