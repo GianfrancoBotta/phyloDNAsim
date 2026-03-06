@@ -12,7 +12,7 @@ rule simulate_sc_tumor_data_phyloDNAsim:
     threads: config["simulate_threads"]
     params:
         num_samples = 1,
-        num_sc_list = " ".join(map(str, [500, 1000, 2500, 5000, 10000])),
+        num_sc_list = " ".join(map(str, [500, 1000, 2000, 4000, 8000])),
         read_len_tb = 150,
         read_len_lb = 140,
         frag_len = 400,

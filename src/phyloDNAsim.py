@@ -197,9 +197,11 @@ ts_sb = time.time()
 for num_single_cells in num_single_cells_list:
     # Compute coverage if coverage per cell is passed
     if coverage_tb is None:
-        coverage_tb = cell_coverage_tb * num_single_cells
+        current_cov = cell_coverage_tb * num_single_cells
+    else:
+        current_cov = coverage_tb
     for sample in range(num_samples):
-        sample_working_dir = os.path.join(working_dir, f'cell_{num_single_cells}', f'sample_{sample+1}')
+        sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}', f'cell_{num_single_cells}')
         os.makedirs(sample_working_dir, exist_ok=True)
         with open(os.path.join(sample_working_dir, 'parameter_list_tb.yaml'), 'w') as f:
             f.write('num leaves: ' + str(num_clones)+'\n')
@@ -222,7 +224,7 @@ for num_single_cells in num_single_cells_list:
         if targeted:
             if bulk: # Bulk simulation
                 targetedSim_bulk_parallel(prop_hc = prop_hc_tb,
-                                                       coverage = coverage_tb,
+                                                       coverage = current_cov,
                                                        num_clones = int_nodes,
                                                        clone_prop = clone_prop,
                                                        threads = threads,
@@ -240,7 +242,7 @@ for num_single_cells in num_single_cells_list:
             else:
                 targetedSim_sc_parallel(num_single_cells = num_single_cells,
                                                      prop_hc = prop_hc_tb,
-                                                     coverage = coverage_tb,
+                                                     coverage = current_cov,
                                                      num_clones = int_nodes,
                                                      clone_prop = clone_prop,
                                                      r = r,
@@ -261,7 +263,7 @@ for num_single_cells in num_single_cells_list:
             if bulk: # Bulk simulation
                 wgsSim(ls = chroms,
                     num_clones = int_nodes,
-                    coverage = coverage_tb,
+                    coverage = current_cov,
                     rl = read_len_tb,
                     fl = frag_len_tb,
                     floc = sample_working_dir,
@@ -275,7 +277,7 @@ for num_single_cells in num_single_cells_list:
             else:
                 wgsSim(ls = chroms,
                     num_clones = int_nodes,
-                    coverage = coverage_tb,
+                    coverage = current_cov,
                     rl = read_len_tb,
                     fl = frag_len_tb,
                     floc = sample_working_dir,
@@ -319,7 +321,7 @@ if(tumor_liquid_biopsy):
         if coverage_tb is None:
             coverage_tb = cell_coverage_tb * num_single_cells
         for sample in range(num_samples):
-                sample_working_dir = os.path.join(working_dir, f'cell_{num_single_cells}', f'sample_{sample+1}')
+                sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}', f'cell_{num_single_cells}')
                 os.makedirs(sample_working_dir, exist_ok=True)
                 with open(os.path.join(sample_working_dir, 'parameter_list_tlb.yaml'), 'w') as f:
                     f.write('num leaves: ' + str(num_clones)+'\n')
@@ -374,7 +376,7 @@ if(plasma_liquid_biopsy):
         if coverage_tb is None:
             coverage_tb = cell_coverage_tb * num_single_cells
         for sample in range(num_samples):
-            sample_working_dir = os.path.join(working_dir, f'cell_{num_single_cells}', f'sample_{sample+1}')
+            sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}', f'cell_{num_single_cells}')
             os.makedirs(sample_working_dir, exist_ok=True)
             with open(os.path.join(sample_working_dir, 'parameter_list_plb.yaml'), 'w') as f:
                 f.write('num leaves: ' + str(num_clones)+'\n')
