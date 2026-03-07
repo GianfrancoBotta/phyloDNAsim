@@ -33,6 +33,7 @@ parser.add_argument("--threads", type=int, default=1)
 parser.add_argument("--paired", action="store_true")
 parser.add_argument("--targeted", action="store_true")
 parser.add_argument("--bulk", action="store_true")
+parser.add_argument("--reference", action="store_true")
 
 parser.add_argument("--num_samples", type=int, required=True)
 parser.add_argument("--num_leaves", type=int, required=True)
@@ -106,6 +107,7 @@ threads = args.threads
 paired = args.paired
 targeted = args.targeted
 bulk = args.bulk
+reference = args.reference
 
 num_samples = args.num_samples
 num_clones = args.num_leaves
@@ -187,20 +189,22 @@ infos = saveMutations(
     regions)
 with open(os.path.join(working_dir, 'information_list.json'), 'w') as f:
     json.dump(infos, f, indent=4)
-    
-# Compute clone proportions
-clone_prop = getDirichletClone(int_nodes, alpha)
 
+# Initialize clone proportions list
+clone_prop_list = {}
 
 print('Start simulation for biopsy data.')
 ts_sb = time.time()
-for num_single_cells in num_single_cells_list:
-    # Compute coverage if coverage per cell is passed
-    if coverage_tb is None:
-        current_cov = cell_coverage_tb * num_single_cells
-    else:
-        current_cov = coverage_tb
-    for sample in range(num_samples):
+for sample in range(num_samples):
+    # Compute clone proportions
+    clone_prop = getDirichletClone(int_nodes, alpha)
+    clone_prop_list[sample] = clone_prop
+    for num_single_cells in num_single_cells_list:
+        # Compute coverage if coverage per cell is passed
+        if coverage_tb is None:
+            current_cov = cell_coverage_tb * num_single_cells
+        else:
+            current_cov = coverage_tb
         sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}', f'cell_{num_single_cells}')
         os.makedirs(sample_working_dir, exist_ok=True)
         with open(os.path.join(sample_working_dir, 'parameter_list_tb.yaml'), 'w') as f:
@@ -316,11 +320,11 @@ prop_hc_tlb = args.prop_hc_tlb
 if(tumor_liquid_biopsy):
     print('Start simulation for tumor liquid biopsy data.')
     ts_tlb = time.time()
-    for num_single_cells in num_single_cells_list:
+    for sample in range(num_samples):
         # Compute coverage if coverage per cell is passed
         if coverage_tb is None:
             coverage_tb = cell_coverage_tb * num_single_cells
-        for sample in range(num_samples):
+        for num_single_cells in num_single_cells_list:
                 sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}', f'cell_{num_single_cells}')
                 os.makedirs(sample_working_dir, exist_ok=True)
                 with open(os.path.join(sample_working_dir, 'parameter_list_tlb.yaml'), 'w') as f:
@@ -341,21 +345,21 @@ if(tumor_liquid_biopsy):
 
                 if targeted:
                     targetedSim_bulk_parallel(prop_hc = prop_hc_tlb,
-                                                            coverage = coverage_lb,
-                                                            num_clones = int_nodes,
-                                                            alpha = alpha,
-                                                            clone_prop = clone_prop,
-                                                            threads = threads,
-                                                            ls = chroms,
-                                                            rl = read_len_lb,
-                                                            fl = frag_len_lb,
-                                                            floc = sample_working_dir,
-                                                            regions = regions,
-                                                            rev_numchrommap = rev_numchrommap,
-                                                            erate = error_rate,
-                                                            tab = tab,
-                                                            infos = infos,
-                                                            paired = paired)
+                                              coverage = coverage_lb,
+                                              num_clones = int_nodes,
+                                              alpha = alpha,
+                                              clone_prop = clone_prop_list[sample],
+                                              threads = threads,
+                                              ls = chroms,
+                                              rl = read_len_lb,
+                                              fl = frag_len_lb,
+                                              floc = sample_working_dir,
+                                              regions = regions,
+                                              rev_numchrommap = rev_numchrommap,
+                                              erate = error_rate,
+                                              tab = tab,
+                                              infos = infos,
+                                              paired = paired)
                 
                 aggregate_fastqs(sample_working_dir, os.path.join(sample_working_dir, "T.ctleft.fq.gz"), os.path.join(sample_working_dir, "T.ctright.fq.gz"), paired)
                 
@@ -371,11 +375,11 @@ prop_hc_plb = args.prop_hc_plb
 if(plasma_liquid_biopsy):
     print('Start simulation for plasma liquid biopsy data.')
     ts_plb = time.time()
-    for num_single_cells in num_single_cells_list:
+    for sample in range(num_samples):
         # Compute coverage if coverage per cell is passed
         if coverage_tb is None:
             coverage_tb = cell_coverage_tb * num_single_cells
-        for sample in range(num_samples):
+        for num_single_cells in num_single_cells_list:
             sample_working_dir = os.path.join(working_dir, f'sample_{sample+1}', f'cell_{num_single_cells}')
             os.makedirs(sample_working_dir, exist_ok=True)
             with open(os.path.join(sample_working_dir, 'parameter_list_plb.yaml'), 'w') as f:
@@ -396,23 +400,58 @@ if(plasma_liquid_biopsy):
 
             if targeted:
                 targetedSim_bulk_parallel(prop_hc = prop_hc_plb,
-                                                        coverage = coverage_lb,
-                                                        num_clones = int_nodes,
-                                                        alpha = alpha,
-                                                        clone_prop = clone_prop,
-                                                        threads = threads,
-                                                        ls = chroms,
-                                                        rl = read_len_lb,
-                                                        fl = frag_len_lb,
-                                                        floc = sample_working_dir,
-                                                        regions = regions,
-                                                        rev_numchrommap = rev_numchrommap,
-                                                        erate = error_rate,
-                                                        tab = tab,
-                                                        infos = infos,
-                                                        paired = paired)
+                                          coverage = coverage_lb,
+                                          num_clones = int_nodes,
+                                          alpha = alpha,
+                                          clone_prop = clone_prop_list[sample],
+                                          threads = threads,
+                                          ls = chroms,
+                                          rl = read_len_lb,
+                                          fl = frag_len_lb,
+                                          floc = sample_working_dir,
+                                          regions = regions,
+                                          rev_numchrommap = rev_numchrommap,
+                                          erate = error_rate,
+                                          tab = tab,
+                                          infos = infos,
+                                          paired = paired)
             
             aggregate_fastqs(sample_working_dir, os.path.join(sample_working_dir, "P.ctleft.fq.gz"), os.path.join(sample_working_dir, "P.ctright.fq.gz"), paired)
 
     te_plb = time.time()
     print('Time elapsed for plasma liquid biopsy simulation', te_plb-ts_plb)
+
+
+
+if(reference):
+    print('Start simulation for reference data.')
+    ts_r = time.time()
+    # Compute coverage if coverage per cell is passed
+    if coverage_tb is None:
+        coverage_tb = cell_coverage_tb * num_single_cells
+    for num_single_cells in num_single_cells_list:
+        ref_working_dir = os.path.join(working_dir, 'reference', f'cell_{num_single_cells}')
+        os.makedirs(ref_working_dir, exist_ok=True)
+
+        if targeted:
+            targetedSim_bulk_parallel(prop_hc = prop_hc_plb,
+                                      coverage = coverage_lb,
+                                      num_clones = int_nodes,
+                                      alpha = alpha,
+                                      clone_prop = clone_prop_list[sample],
+                                      threads = threads,
+                                      ls = chroms,
+                                      rl = read_len_lb,
+                                      fl = frag_len_lb,
+                                      floc = ref_working_dir,
+                                      regions = regions,
+                                      rev_numchrommap = rev_numchrommap,
+                                      erate = error_rate,
+                                      tab = tab,
+                                      infos = infos,
+                                      paired = paired)
+        
+        aggregate_fastqs(ref_working_dir, os.path.join(ref_working_dir, "N.ctleft.fq.gz"), os.path.join(ref_working_dir, "N.ctright.fq.gz"), paired)
+
+    te_r = time.time()
+    print('Time elapsed for reference simulation', te_r-ts_r)
