@@ -16,6 +16,7 @@ import re
 import shutil
 import statistics
 import string
+import subprocess
 import tskit
 
 from create_mutations import *
@@ -133,7 +134,7 @@ def generateOrder(tree, time_matrix, list_of_rates):
         mutationedge_list.append(ordered_muts)
     return mutationedge_list, fin_rate_list
 
-def saveMutations(current_genome, tot_nodes, list_of_paths, mutationedge_list, numchrommap, targeted, regions):
+def saveMutations(current_genome, tot_nodes, list_of_paths, mutationedge_list, numchrommap, targeted=False, regions=None):
     save_functions = {
         'SNV': create_speedSNP,
         'CNV': create_CNV,
@@ -180,7 +181,8 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, mutationedge_list, n
     
     for path in list_of_paths:
         mutated_genome = copy.deepcopy(current_genome) # Create a copy not to modify directly the genome
-        mutated_regions = copy.deepcopy(regions)
+        if targeted:
+            mutated_regions = copy.deepcopy(regions)
         for i in range(len(path)-1):
             if(path[i+1] != (tot_nodes-1)):
                 c_infos = infos[path[i]].copy()
@@ -188,15 +190,19 @@ def saveMutations(current_genome, tot_nodes, list_of_paths, mutationedge_list, n
                 
                 for m_type in current_muts.keys():
                     for _ in current_muts[m_type]:
-                        info = save_functions[m_type](mutated_genome, numchrommap, targeted, mutated_regions)
-                        if info is None:
-                            print("Invalid information to apply mutations.")
+                        if targeted:
+                            info = save_functions[m_type](mutated_genome, numchrommap, targeted, mutated_regions)
+                        else:
+                            info = save_functions[m_type](mutated_genome, numchrommap, targeted)
                         c_infos.append(info)
-                        # Adjust mutations info for the mutated genomes (shift indices if there are two or more events on the same chromosome)
+                        
                         mutated_genome = apply_functions[m_type](mutated_genome, info)
-                        if m_type in ['SNV', 'INVERSION', 'KATAEGIS']:
-                            continue
-                        mutated_regions = adapt_functions[m_type](mutated_regions, info)
+                        if targeted:
+                            # Adjust mutations info for the mutated genomes (shift indices if there are two or more events on the same chromosome)
+                            if m_type in ['SNV', 'INVERSION', 'KATAEGIS']:
+                                continue
+                            mutated_regions = adapt_functions[m_type](mutated_regions, info)
+                            
                 infos[path[i+1]] = c_infos
     return infos
 
@@ -293,91 +299,120 @@ def split(string, length):
 def revc(sequence, tab):
     return sequence.translate(tab)[::-1]
 
-def wgsSim(ls, num_clones, coverage, rl, fl, floc, batch, alpha, erate, tab, infos, r=None, p=None, flag=0, num_single_cells = 1, paired=False):
+def wgsSim_bulk(thread_id, clone_prop, target_cov, num_clones, ls, rl, fl, floc, erate, tab, infos, paired=False):
+    # Per-thread output directory or prefix
+    thread_dir = os.path.join(floc, f"thread_{thread_id}")
+    os.makedirs(thread_dir, exist_ok=True)
     # Open files to write
-    if(flag == 0):
-        f1 = gzip.open(os.path.join(floc, 'bulkleft.fq.gz'), 'wt')
-        if(paired):
-            f2 = gzip.open(os.path.join(floc, 'bulkright.fq.gz'), 'wt')
-    elif(flag == 1):
-        f1 = gzip.open(os.path.join(floc, 'refleft.fq.gz'), 'wt')
-        if(paired):
-            f2 = gzip.open(os.path.join(floc, 'refright.fq.gz'), 'wt')
-    else:
-        f1 = gzip.open(os.path.join(floc, 'singlecellleft.fq.gz'), 'wt')
-        if(paired):
-            f2 = gzip.open(os.path.join(floc, 'singlecellright.fq.gz'), 'wt')
-    # Initialize coverage
-    cov = 0.0
+    f1 = io.BufferedWriter(gzip.open(os.path.join(thread_dir, 'threadleft.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
     if(paired):
-        ratio = 2*rl/fl
+        f2 = io.BufferedWriter(gzip.open(os.path.join(thread_dir, 'threadright.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
     else:
         fl = rl
-    if(flag == 0):
-        chroms = ls # Duplicate healthy chromosomes to modify them
-    if(flag == 2):
-        if(any(x is None for x in [p, r])):
-            print("Negative binomial parameters for single-cell depths are needed in single-cell mode.")
-        target_cov = np.random.negative_binomial(r, p, size=num_single_cells) # Sample cell depths from a negative binomial
-        target_cov = target_cov / target_cov.sum() * coverage # Scale to match total coverage
-    else:
-        target_cov = list(coverage)
-    # Initialize lists to store reads from each single-cell
-    r1 = []
-    if(paired):
-        r2 = []
-    for i in range(num_single_cells):
-        if(flag == 2): # Pick a clone for every single-cell if it is a single-cell simultation
-            distn = getDirichletClone(num_clones, alpha)
-            clone = pickdclone(distn, num_clones)
-            chroms = applyMutations(ls, infos, clone)
-        while(cov < target_cov[i]):
-            if(flag == 1): # Pick a clone for every added coverage if it is a bulk simulation
-                distn = getDirichletClone(num_clones, alpha)
-                clone = pickdclone(distn, num_clones)
-                chroms = applyMutations(ls, infos, clone)
-            chromnum = 0
-            for j in range(batch):
-                for chrom in chroms:
-                    if(len(chrom)==0): # Deleted chromosomes
-                        continue
-                    # frag_len = 0
-                    # while(frag_len <= rl):
-                    #     frag_len = getfrag(fl)
-                    for seq in split(chrom, frag_len):
-                        sub = seq
-                        if random.random() > 0.5:
-                            sub = revc(seq, tab)
-                        random_str = ''.join(random.choices(
-                            string.ascii_letters, k=15))
-                        pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
-                        qual1 = 'K'*len(pair1)
-                        if(paired):
-                            pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
-                            qual2 = 'K'*len(pair2)
-                        if(flag == 2):
-                            r1.append('\n'.join([f'@cell{clone}_{random_str}', pair1, '+', qual1]) + '\n')
-                            if(paired):    
-                                r2.append('\n'.join([f'@cell{clone}_{random_str}', pair2, '+', qual2]) + '\n')
-                        else:
-                            r1.append('\n'.join([f'@{random_str}', pair1, '+', qual1]) + '\n')
-                            if(paired):    
-                                r2.append('\n'.join([f'@{random_str}', pair2, '+', qual2]) + '\n')
-                    chromnum += 1
-            # Update coverage after each iteration
-            cov += (2*batch*ratio) if paired else 2*batch
-        # Write to files
-        f1.write("".join(r1))
-        if(paired):
-            f2.write("".join(r2))
-        r1.clear()
-        if(paired):
-            r2.clear()
+
+    for clone in range(num_clones+1):
+        # Initialize coverage
+        cov = 0.0
+        clone_target_cov = target_cov * clone_prop[clone]
+        chroms = applyMutations(ls, infos, clone)
+        
+        # Compute length of the clone's genome
+        genome_size = sum(len(chrom) for chrom in chroms)
+        
+        while cov < clone_target_cov:
+            valid_chroms = [i for i, s in enumerate(chroms) if len(s) > 0]
+            chrom = chroms[random.choice(valid_chroms)]
+            n = len(chrom)
+
+            startindex = random.randint(0, n-1)
+                            
+            # Update coverage in each iteration
+            if((n-startindex) < rl):
+                cov += (2 * (n-startindex) / genome_size) if paired else ((n-startindex) / genome_size)
+            else:
+                cov += (2 * rl / genome_size) if paired else (rl / genome_size)
+        
+            # Extract the read
+            if((n-startindex) < fl and (n-startindex) > rl):
+                sub = chrom[startindex:startindex + n-startindex]
+            elif((n-startindex) < rl):
+                sub = chrom[startindex:startindex + rl]
+            else:
+                sub = chrom[startindex:startindex + fl]
+                
+            if random.random() > 0.5:
+                sub = revc(sub, tab)
+            random_str = ''.join(random.choices(string.ascii_letters, k=15))
+            pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
+            qual1 = 'K'*len(pair1)
+            if(paired):
+                pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
+                qual2 = 'K'*len(pair2)
+            f1.write(('\n'.join([f'@clone{clone}_{random_str}', pair1, '+', qual1]) + '\n').encode('utf-8'))
+            if(paired):
+                f2.write(('\n'.join([f'@clone{clone}_{random_str}', pair2, '+', qual2]) + '\n').encode('utf-8'))
     # Close files
     f1.close()
     if(paired):
         f2.close()
     return(0)
+
+    
+def wgsSim_sc(cell_id, clone, target_cov, ls, rl, fl, floc, erate, tab, infos, paired=False):
+    # Per-cell output directory or prefix
+    cell_dir = os.path.join(floc, f"cell_{cell_id}")
+    os.makedirs(cell_dir, exist_ok=True)
+    # Open files to write
+    f1 = io.BufferedWriter(gzip.open(os.path.join(cell_dir, 'scleft.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
+    if paired:
+        f2 = io.BufferedWriter(gzip.open(os.path.join(cell_dir, 'scright.fq.gz'), 'wb'), buffer_size = 4 * 1024**2)
+        
+    # Initialize coverage
+    cov = 0.0
+    chroms = applyMutations(ls, infos, clone)
+    
+    # Compute length of the clone's genome
+    genome_size = sum(len(chrom) for chrom in chroms)
+    
+    while cov < target_cov:
+        valid_chroms = [i for i, s in enumerate(chroms) if len(s) > 0]
+        chrom = chroms[random.choice(valid_chroms)]
+        n = len(chrom)
+
+        startindex = random.randint(0, n-1)
+                        
+        # Update coverage in each iteration
+        if((n-startindex) < rl):
+            cov += (2 * (n-startindex) / genome_size) if paired else ((n-startindex) / genome_size)
+        else:
+            cov += (2 * rl / genome_size) if paired else (rl / genome_size)
+    
+        # Extract the read
+        if((n-startindex) < fl and (n-startindex) > rl):
+            sub = chrom[startindex:startindex + n-startindex]
+        elif((n-startindex) < rl):
+            sub = chrom[startindex:startindex + rl]
+        else:
+            sub = chrom[startindex:startindex + fl]
+            
+        if random.random() > 0.5:
+            sub = revc(sub, tab)
+        random_str = ''.join(random.choices(string.ascii_letters, k=15))
+        pair1 = mutateFrag(sub[:rl], erate).decode("utf-8")
+        qual1 = 'K'*len(pair1)
+        if(paired):
+            pair2 = mutateFrag(revc(sub[-rl:], tab), erate).decode("utf-8")
+            qual2 = 'K'*len(pair2)
+        f1.write(('\n'.join([f'@clone{clone}_{random_str}', pair1, '+', qual1]) + '\n').encode('utf-8'))
+        if(paired):
+            f2.write(('\n'.join([f'@clone{clone}_{random_str}', pair2, '+', qual2]) + '\n').encode('utf-8'))
+            
+    # Close files
+    f1.close()
+    if(paired):
+        f2.close()
+    return(0)
+
 
 def targetedSim_bulk(thread_id, clone_prop, target_cov, num_clones, ls, rl, fl, floc, regions, rev_numchrommap, erate, tab, infos, paired=False):
     # Per-thread output directory or prefix
@@ -442,6 +477,7 @@ def targetedSim_bulk(thread_id, clone_prop, target_cov, num_clones, ls, rl, fl, 
         f2.close()
     return(0)
 
+
 def targetedSim_sc(cell_id, clone, target_cov, ls, rl, fl, floc, regions, rev_numchrommap, erate, tab, infos, paired=False):
     # Per-cell output directory or prefix
     cell_dir = os.path.join(floc, f"cell_{cell_id}")
@@ -500,6 +536,56 @@ def targetedSim_sc(cell_id, clone, target_cov, ls, rl, fl, floc, regions, rev_nu
         f2.close()
     return(0)
 
+
+def wgsSim_bulk_parallel(prop_hc, coverage, num_clones, raw_clone_prop, threads=None, **kwargs):
+    if(threads == None):
+        print("Using 4 cores as number of cores to use is not specified.")
+        threads = 4
+    thread_cov = coverage / threads # Scale to match total coverage
+    
+    # Compute tumor clones proportions    
+    clone_prop = [clone_p * (1-prop_hc) for clone_p in raw_clone_prop]
+    clone_prop.append(1-sum(clone_prop))
+    
+    # Bring kwargs to args as starmap accepts only positional arguments
+    extra_args = tuple(kwargs.values())
+    
+    with mp.Pool(processes=threads) as pool:
+        pool.starmap(
+            wgsSim_bulk,
+            [(i+1, clone_prop, thread_cov, num_clones, *extra_args) for i in range(threads)]
+        )
+        
+        
+def wgsSim_sc_parallel(num_single_cells, prop_hc, coverage, num_clones, clone_prop, r, p, threads=None, **kwargs):
+    # Simulate negative binomial coverage
+    if(any(x is None for x in [p, r])):
+            print("Negative binomial parameters for single-cell depths are needed in single-cell mode.")
+    cell_cov = np.random.negative_binomial(r, p, size=num_single_cells) # Sample cell depths from a negative binomial
+    cell_cov = cell_cov / cell_cov.sum() * coverage # Scale to match total coverage
+    if(threads == None):
+        print("Using 4 cores as number of cores to use is not specified.")
+        threads = 4
+    
+    # Compute healthy and tumor cells to simulate
+    hc = int(num_single_cells * prop_hc // 1)
+    tc = num_single_cells - hc
+        
+    # Bring kwargs to args as starmap accepts only positional arguments
+    extra_args = tuple(kwargs.values())
+    
+    with mp.Pool(processes=threads) as pool:
+        pool.starmap(
+            wgsSim_sc,
+            [(i+1, num_clones, cell_cov[i], *extra_args) for i in range(hc)]
+        )
+    with mp.Pool(processes=threads) as pool:
+        pool.starmap(
+            wgsSim_sc,
+            [(i+1+hc, pickdclone(clone_prop, num_clones), cell_cov[i+hc], *extra_args) for i in range(tc)]
+        )
+        
+
 def targetedSim_bulk_parallel(prop_hc, coverage, num_clones, raw_clone_prop, threads=None, **kwargs):
     if(threads == None):
         print("Using 4 cores as number of cores to use is not specified.")
@@ -518,6 +604,7 @@ def targetedSim_bulk_parallel(prop_hc, coverage, num_clones, raw_clone_prop, thr
             targetedSim_bulk,
             [(i+1, clone_prop, thread_cov, num_clones, *extra_args) for i in range(threads)]
         )
+        
         
 def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, num_clones, clone_prop, r, p, threads=None, **kwargs):
     # Simulate negative binomial coverage
@@ -547,23 +634,19 @@ def targetedSim_sc_parallel(num_single_cells, prop_hc, coverage, num_clones, clo
             [(i+1+hc, pickdclone(clone_prop, num_clones), cell_cov[i+hc], *extra_args) for i in range(tc)]
         )
 
+
 def aggregate_fastqs(fastq_dir, output_left_fastq, output_right_fastq=None, paired=False):
     left_fastqs = sorted(glob.glob(f"{fastq_dir}/*/*left.fq.gz"))
     if(paired):
         right_fastqs = sorted(glob.glob(f"{fastq_dir}/*/*right.fq.gz"))
 
-    with open(output_left_fastq, "ab") as out_f:
-        for fq in left_fastqs:
-            with open(fq, "rb") as in_f:
-                shutil.copyfileobj(in_f, out_f)
+    subprocess.run(["cat", *left_fastqs], stdout=open(output_left_fastq, "ab"))
     if(paired):
-        with open(output_right_fastq, "ab") as out_f:
-            for fq in right_fastqs:
-                with open(fq, "rb") as in_f:
-                    shutil.copyfileobj(in_f, out_f)
+        subprocess.run(["cat", *right_fastqs], stdout=open(output_right_fastq, "ab"))
 
     cleanup_dir(fastq_dir)
     return(0)
+
 
 def cleanup_dir(fastq_dir):
     for path in glob.glob(os.path.join(fastq_dir, "*")):

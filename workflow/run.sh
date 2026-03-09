@@ -22,4 +22,4 @@ else
 fi
 
 echo "[INFO] Starting Snakemake run..."
-snakemake --use-conda --use-singularity --cores 100 --singularity-args '-B /scratch -B /cluster/work/bewi/members/gbotta:/cluster/work/bewi/members/gbotta:rw' --rerun-incomplete --keep-incomplete
+snakemake --use-conda --use-singularity --cores 100 --singularity-args '-B /scratch -B /cluster/work/bewi/members/gbotta:/cluster/work/bewi/members/gbotta:rw' --rerun-incomplete

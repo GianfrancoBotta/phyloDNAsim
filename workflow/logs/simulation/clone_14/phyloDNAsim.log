@@ -1,0 +1,8 @@
+Start simulation for biopsy data in sample_0.
+Time elapsed for single-cell biopsy simulation in sample_0. 43050.40024328232
+Start simulation for tumor liquid biopsy data in sample_0.
+Time elapsed for tumor liquid biopsy simulation in sample_0. 122.32414650917053
+Start simulation for plasma liquid biopsy data in sample_0.
+Time elapsed for plasma liquid biopsy simulation in sample_0. 130.41083216667175
+Start simulation for reference data in sample_0.
+Time elapsed for reference simulation in sample_{sample}. 120.33130860328674

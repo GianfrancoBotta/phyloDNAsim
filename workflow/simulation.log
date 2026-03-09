@@ -6,137 +6,47 @@ Unlocked working directory.
 Assuming unrestricted shared filesystem usage.
 host: eu-fn-g2-03
 Building DAG of jobs...
-Using shell: /usr/bin/bash
-Provided cores: 100
-Rules claiming more threads will be scaled down.
-Job stats:
-job                                   count
-----------------------------------  -------
-all                                       1
-simulate_sc_tumor_data_phyloDNAsim       10
-total                                    11
-
+[2026-03-07T20:29:42.945+01:00] error: *** JOB 59463000 ON eu-fn-g2-03 CANCELLED AT 2026-03-07T20:29:42 DUE to SIGNAL Terminated ***
+[Sun Mar  8 08:24:30 2026]
+Finished jobid: 7 (Rule: simulate_tumor_data_phyloDNAsim)
+1 of 11 steps (9%) done
+[Sun Mar  8 08:53:15 2026]
+Finished jobid: 3 (Rule: simulate_tumor_data_phyloDNAsim)
+2 of 11 steps (18%) done
+[Sun Mar  8 10:20:50 2026]
+Finished jobid: 10 (Rule: simulate_tumor_data_phyloDNAsim)
+3 of 11 steps (27%) done
+[Sun Mar  8 11:16:36 2026]
+Finished jobid: 8 (Rule: simulate_tumor_data_phyloDNAsim)
+4 of 11 steps (36%) done
+[Sun Mar  8 11:43:04 2026]
+Finished jobid: 1 (Rule: simulate_tumor_data_phyloDNAsim)
+5 of 11 steps (45%) done
+[Sun Mar  8 12:27:37 2026]
+Finished jobid: 2 (Rule: simulate_tumor_data_phyloDNAsim)
+6 of 11 steps (55%) done
+[Sun Mar  8 18:34:27 2026]
+Finished jobid: 6 (Rule: simulate_tumor_data_phyloDNAsim)
+7 of 11 steps (64%) done
+[Sun Mar  8 19:38:44 2026]
+Finished jobid: 5 (Rule: simulate_tumor_data_phyloDNAsim)
+8 of 11 steps (73%) done
+[Mon Mar  9 00:34:38 2026]
+Finished jobid: 4 (Rule: simulate_tumor_data_phyloDNAsim)
+9 of 11 steps (82%) done
+[Mon Mar  9 02:34:54 2026]
+Finished jobid: 9 (Rule: simulate_tumor_data_phyloDNAsim)
+10 of 11 steps (91%) done
 Select jobs to execute...
-Failed to solve scheduling problem with ILP solver, falling back to greedy scheduler. You likely have to fix your ILP solver installation. Error message: PULP_CBC_CMD: Not Available (check permissions on cbc)
-Execute 10 jobs...
+Execute 1 jobs...
 
-[Fri Mar  6 22:39:45 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_12
-    log: logs/simulation/clone_12/phyloDNAsim.log
-    jobid: 6
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_12; Params have changed since last execution: Union of exclusive params before and now across all output: before: '500 1000 2500 5000 10000' now: '500 1000 2000 4000 8000' 
-    wildcards: n_clones=12
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_16
-    log: logs/simulation/clone_16/phyloDNAsim.log
-    jobid: 8
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_16
-    wildcards: n_clones=16
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_20
-    log: logs/simulation/clone_20/phyloDNAsim.log
-    jobid: 10
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_20
-    wildcards: n_clones=20
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_2
-    log: logs/simulation/clone_2/phyloDNAsim.log
-    jobid: 1
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_2; Params have changed since last execution: Union of exclusive params before and now across all output: before: '500 1000 2500 5000 10000' now: '500 1000 2000 4000 8000' 
-    wildcards: n_clones=2
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_6
-    log: logs/simulation/clone_6/phyloDNAsim.log
-    jobid: 3
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_6; Params have changed since last execution: Union of exclusive params before and now across all output: before: '500 1000 2500 5000 10000' now: '500 1000 2000 4000 8000' 
-    wildcards: n_clones=6
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_10
-    log: logs/simulation/clone_10/phyloDNAsim.log
-    jobid: 5
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_10; Params have changed since last execution: Union of exclusive params before and now across all output: before: '500 1000 2500 5000 10000' now: '500 1000 2000 4000 8000' 
-    wildcards: n_clones=10
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_14
-    log: logs/simulation/clone_14/phyloDNAsim.log
-    jobid: 7
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_14
-    wildcards: n_clones=14
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_18
-    log: logs/simulation/clone_18/phyloDNAsim.log
-    jobid: 9
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_18; Params have changed since last execution: Union of exclusive params before and now across all output: before: '500 1000 2500 5000 10000' now: '500 1000 2000 4000 8000' 
-    wildcards: n_clones=18
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_4
-    log: logs/simulation/clone_4/phyloDNAsim.log
-    jobid: 2
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_4
-    wildcards: n_clones=4
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-[Fri Mar  6 22:39:47 2026]
-localrule simulate_sc_tumor_data_phyloDNAsim:
-    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/data/genome.fa, /cluster/work/bewi/members/gbotta/phyloDNAsim/data/panel.bed
-    output: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_8
-    log: logs/simulation/clone_8/phyloDNAsim.log
-    jobid: 4
-    reason: Missing output files: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_8
-    wildcards: n_clones=8
-    threads: 10
-    resources: tmpdir=/scratch/tmp.59374183.gbotta
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
-Activating singularity image /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/singularity/2cb9c8d771e5e7fb3d89f3aeb2e90e44.simg
-Activating conda environment: .snakemake/conda/b46a40ac1d6d0d44f2f55da3402dfb64_
+[Mon Mar  9 02:34:54 2026]
+localrule all:
+    input: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_2, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_4, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_6, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_8, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_10, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_12, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_14, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_16, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_18, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_20
+    jobid: 0
+    reason: Input files updated by another job: /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_2, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_8, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_20, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_18, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_12, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_6, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_16, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_4, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_10, /cluster/work/bewi/members/gbotta/phyloDNAsim/results/simulation/clone_14
+    resources: tmpdir=/scratch/tmp.59461210.gbotta
+[Mon Mar  9 02:34:55 2026]
+Finished jobid: 0 (Rule: all)
+11 of 11 steps (100%) done
+Complete log(s): /cluster/work/bewi/members/gbotta/phyloDNAsim/workflow/.snakemake/log/2026-03-07T201548.129087.snakemake.log
