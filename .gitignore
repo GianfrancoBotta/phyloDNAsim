@@ -3,11 +3,14 @@
 
 # Track the repo essentials
 !.gitignore
-!src/
+!phylodnasim/
 !workflow/
+!LICENSE.txt
+!README.md
+!pyproject.toml
 
 # Track all normal files inside tracked directories
-!src/**/*
+!phylodnasim/**/*
 !workflow/**/*
 
 # Ignore hidden files inside tracked directories

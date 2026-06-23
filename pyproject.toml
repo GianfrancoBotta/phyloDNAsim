@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phylodnasim"
+version = "0.1.0"
+description = "Phylogenetic DNA tumour biopsy simulator (bulk & single-cell)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    "biopython",
+    "msprime",
+    "numpy",
+    "pandas",
+    "psutil",
+    "tskit",
+]
+authors = [
+  {name = "Gianfranco Botta", email = "gianfranco.botta7çgmail.com"},
+]
+maintainers = [
+  {name = "Gianfranco Botta", email = "gianfranco.botta7çgmail.com"}
+]
+description = "Tumor phylogenetic data simulator for bulk and single-cell DNA-seq (both targeted and whole-genome sequencing are supported)."
+readme = "README.md"
+license-files = ["LICENSE.txt"]
+
+[project.scripts]
+phylodnasim = "phylodnasim.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["phylodnasim*"]
